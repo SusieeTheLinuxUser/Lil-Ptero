@@ -44,10 +44,12 @@ jobs:
           storeFile=keystore/release-key.jks
           EOF
 
-      - run: flutter build apk --release
+      - run: flutter build apk --release --split-per-abi
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: build/app/outputs/flutter-apk/app-release.apk
+          files: build/app/outputs/flutter-apk/app-*-release.apk
           generate_release_notes: true
+          body: |
+            Pick the APK matching your device's CPU — `arm64-v8a` covers essentially all phones sold since ~2017; use `armeabi-v7a` only for very old 32-bit-only devices, `x86_64` only for x86 emulators/devices.
