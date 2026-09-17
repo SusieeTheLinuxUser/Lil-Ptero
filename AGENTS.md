@@ -88,6 +88,13 @@ Not yet implemented (intentionally out of v1 scope, see roadmap below): file man
 - Don't add cleartext (HTTP) support or a custom network security config that weakens the OS default — Android already blocks plaintext traffic by default on this app's target SDK, which is correct given the app sends a bearer credential on every request.
 - If you touch `credentials.dart` or `api_client.dart`, double-check nothing new gets logged or serialized somewhere it shouldn't.
 
+## Releases & distribution
+
+- **Application ID**: `dev.susiee.lilptero` — permanent, can never change once anything is published (F-Droid and every installed copy are tied to it). Don't touch `applicationId`/`namespace` in `android/app/build.gradle.kts` or move `MainActivity.kt`'s package without understanding that consequence.
+- **GitHub Releases**: `.github/workflows/release.yml` builds a signed release APK and publishes it automatically when a tag matching `v*.*.*` is pushed. Bump `version:` in `pubspec.yaml` first (format `X.Y.Z+buildNumber`), then `git tag vX.Y.Z && git push --tags`.
+- **Release signing**: `android/key.properties` + `android/keystore/release-key.jks` are gitignored and never committed — the Gradle config in `android/app/build.gradle.kts` falls back to debug signing when they're absent, so a fresh checkout still builds fine, just unsigned-for-release. CI gets the real key from GitHub Actions secrets (`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`), written to those same files at build time.
+- **F-Droid**: not submitted yet — see [fdroid/README.md](fdroid/README.md) for the full process and [fdroid/dev.susiee.lilptero.yml](fdroid/dev.susiee.lilptero.yml) for the draft (untested, not yet copied into the real `fdroiddata` repo) build recipe. Note F-Droid re-signs the APK with their own key, so it's a different signature from the GitHub Releases build — expected, documented in that README.
+
 ## Roadmap / known scope cuts (don't "fix" these without discussion)
 
 - Android only — no iOS build yet.

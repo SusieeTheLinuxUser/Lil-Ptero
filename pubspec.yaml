@@ -1,7 +1,7 @@
 name: pterodactyl_mobile
 description: Open-source Android client for controlling and monitoring Minecraft servers on any Pterodactyl panel.
 publish_to: 'none'
-version: 0.1.0
+version: 0.1.0+1
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
