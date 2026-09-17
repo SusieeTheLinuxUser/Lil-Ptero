@@ -16,7 +16,7 @@ No account with us, no backend of ours in the middle — the app talks directly 
 
 ## Status
 
-v1 in progress: server list, resource stats, power controls, and live console. Android only for now.
+v1 shipped: server list, resource stats, power controls, live console, dark theme with accent presets. Android only for now.
 
 ## Getting started (development)
 
@@ -40,11 +40,16 @@ v1 in progress: server list, resource stats, power controls, and live console. A
 
 ## Installing
 
-No releases published yet. Once available: [GitHub Releases](https://github.com/SusieeTheLinuxUser/Lil-Ptero/releases) will have a downloadable APK, and an [F-Droid submission](fdroid/README.md) is in prep (not yet live).
+- **GitHub Releases**: grab the latest signed APK from [Releases](https://github.com/SusieeTheLinuxUser/Lil-Ptero/releases) and sideload it.
+- **F-Droid**: [submitted](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/49236), pending review — not yet live in the official repo. See [fdroid/README.md](fdroid/README.md) for status.
 
 ## Getting a Client API key
 
 In your Pterodactyl panel, go to **Account Settings → API Credentials** and create a new Client API key. Use that (not an Application/admin key) along with your panel's base URL (e.g. `https://panel.example.com`) in the app's setup screen.
+
+## Contributing
+
+Humans and AI coding agents both welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) to get started and [AGENTS.md](AGENTS.md) for the project's conventions.
 
 ## License
 
