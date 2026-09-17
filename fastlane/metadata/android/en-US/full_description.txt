@@ -1,0 +1,13 @@
+Pterodactyl Mobile is a free, open-source Android client for the Pterodactyl game server panel. It works with any Pterodactyl host — you connect with your own panel URL and a personal Client API key, and the app talks directly to your panel's API. No account with us, no backend of ours in the middle.
+
+Features:
+* Server list with live resource usage (CPU, memory, disk)
+* Power controls: start, restart, stop, kill
+* Live console with command input, streamed over the panel's websocket
+* Dark theme with a few accent color presets
+
+Requirements:
+* A Pterodactyl panel URL
+* A personal Client API key, generated in your panel's Account Settings → API Credentials (not an Application/admin key)
+
+No analytics, no ads, no trackers. Minimal dependencies.

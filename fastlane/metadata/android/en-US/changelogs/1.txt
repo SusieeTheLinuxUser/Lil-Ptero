@@ -1,0 +1,1 @@
+Initial release: server list, live resource stats, power controls (start/restart/stop/kill), and a live console with command input.
