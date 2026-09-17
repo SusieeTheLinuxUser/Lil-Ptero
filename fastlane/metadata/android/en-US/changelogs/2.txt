@@ -1,0 +1,1 @@
+Fix: release builds no longer embed a Play Console "dependency metadata" block, which caused F-Droid's build scanner to reject the app.
