@@ -62,6 +62,15 @@ android {
             }
         }
     }
+
+    // AGP embeds a "Dependency metadata" block in the APK's signing block by
+    // default (for Play Console's dependency vulnerability scanning). F-Droid's
+    // scanner treats any extra signing-block content as suspicious and rejects
+    // the build outright — disable it, we don't publish to Play anyway.
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
+    }
 }
 
 kotlin {
