@@ -30,6 +30,7 @@ lib/
   console_socket.dart         — ConsoleSocket (websocket I/O) + ConsoleStateMachine (pure, unit-testable auth/token-refresh logic)
   models.dart                 — PteroServer, ServerResources, WebsocketDetails, ConsoleEvent (sealed), manual fromJson
   format.dart                 — formatBytes, formatUptime
+  theme_prefs.dart            — dark-only theme, selectable accent color presets (persisted via flutter_secure_storage)
   screens/                    — Setup, Server List, Server Detail (Overview + Console tabs), Settings
   widgets/resource_gauge.dart — shared CPU/RAM/disk bar
 
