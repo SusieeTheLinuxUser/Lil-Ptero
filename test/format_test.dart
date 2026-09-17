@@ -18,4 +18,20 @@ void main() {
     test('hours', () => expect(formatUptime(const Duration(minutes: 60)), '1h 0m'));
     test('days', () => expect(formatUptime(const Duration(hours: 24)), '1d 0h'));
   });
+
+  group('normalizePanelUrl', () {
+    test('adds https:// when no scheme is given', () {
+      expect(normalizePanelUrl('panel.example.com'), 'https://panel.example.com');
+    });
+    test('leaves an explicit scheme alone', () {
+      expect(normalizePanelUrl('http://panel.example.com'), 'http://panel.example.com');
+      expect(normalizePanelUrl('https://panel.example.com'), 'https://panel.example.com');
+    });
+    test('strips a trailing slash', () {
+      expect(normalizePanelUrl('panel.example.com/'), 'https://panel.example.com');
+    });
+    test('trims surrounding whitespace', () {
+      expect(normalizePanelUrl('  panel.example.com  '), 'https://panel.example.com');
+    });
+  });
 }

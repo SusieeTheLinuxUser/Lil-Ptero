@@ -1,3 +1,11 @@
+/// Defaults to https:// when the input omits a scheme (e.g. "panel.example.com").
+String normalizePanelUrl(String raw) {
+  var url = raw.trim();
+  if (!url.contains('://')) url = 'https://$url';
+  if (url.endsWith('/')) url = url.substring(0, url.length - 1);
+  return url;
+}
+
 String formatBytes(int bytes) {
   if (bytes < 1024) return '$bytes B';
   const units = ['KB', 'MB', 'GB', 'TB'];

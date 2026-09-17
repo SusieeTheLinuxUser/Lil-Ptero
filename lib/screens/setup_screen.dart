@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../api_client.dart';
 import '../credentials.dart';
+import '../format.dart';
 import 'server_list_screen.dart';
 
 class SetupScreen extends StatefulWidget {
@@ -27,9 +28,9 @@ class _SetupScreenState extends State<SetupScreen> {
 
   String? _validateUrl(String? value) {
     if (value == null || value.trim().isEmpty) return 'Enter your panel URL';
-    final uri = Uri.tryParse(value.trim());
+    final uri = Uri.tryParse(normalizePanelUrl(value));
     if (uri == null || !uri.hasScheme || !uri.hasAuthority) {
-      return 'Enter a full URL, e.g. https://panel.example.com';
+      return 'Enter a valid panel address, e.g. panel.example.com';
     }
     return null;
   }
@@ -41,8 +42,7 @@ class _SetupScreenState extends State<SetupScreen> {
       _error = null;
     });
 
-    var url = _urlController.text.trim();
-    if (url.endsWith('/')) url = url.substring(0, url.length - 1);
+    final url = normalizePanelUrl(_urlController.text);
     final credentials = Credentials(panelUrl: url, apiKey: _keyController.text.trim());
     final client = PterodactylApiClient(credentials);
     try {
@@ -75,7 +75,7 @@ class _SetupScreenState extends State<SetupScreen> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _urlController,
-                decoration: const InputDecoration(labelText: 'Panel URL', hintText: 'https://panel.example.com'),
+                decoration: const InputDecoration(labelText: 'Panel URL', hintText: 'panel.example.com'),
                 keyboardType: TextInputType.url,
                 validator: _validateUrl,
               ),
