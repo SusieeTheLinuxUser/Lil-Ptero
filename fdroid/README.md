@@ -1,6 +1,6 @@
 # Submitting to F-Droid
 
-Status: **submitted, one round of CI feedback fixed.** [Merge request !49236](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/49236) is open against `fdroiddata`, from a fork at `gitlab.com/SusieeTheLinuxUser/fdroiddata` (branch `dev.susiee.lilptero`). [dev.susiee.lilptero.yml](dev.susiee.lilptero.yml) in this folder is kept in sync with `metadata/dev.susiee.lilptero.yml` in that fork — edit it here first, re-test (see below), then apply the same change there and push to the `dev.susiee.lilptero` branch to update the MR. Currently pointing at v0.1.1 (versionCode 2) after v0.1.0's CI rejection — see "CI feedback so far" below. Now waiting on F-Droid's CI and volunteer review.
+Status: **CI green, waiting on volunteer review.** [Merge request !49236](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/49236) is open against `fdroiddata`, from a fork at `gitlab.com/SusieeTheLinuxUser/fdroiddata` (branch `dev.susiee.lilptero`). [dev.susiee.lilptero.yml](dev.susiee.lilptero.yml) in this folder is kept in sync with `metadata/dev.susiee.lilptero.yml` in that fork — edit it here first, re-test (see below), then apply the same change there and push to the `dev.susiee.lilptero` branch to update the MR. Pointing at v0.1.1 (versionCode 2) after v0.1.0's CI rejection — see "CI feedback so far" below. Pipeline `2858758122` (commit `bc9f90fb`) finished **all green** including `check apk` on 2026-09-17, confirming the fix. Nothing left to do on our side; it's now purely a volunteer-review queue wait.
 
 ## CI feedback so far
 
@@ -8,14 +8,14 @@ Status: **submitted, one round of CI feedback fixed.** [Merge request !49236](ht
 
 **Fix**: added `dependenciesInfo { includeInApk = false; includeInBundle = false }` to `android/app/build.gradle.kts`. Cut v0.1.1 (versionCode 2) with the fix, updated the recipe to point at it, and verified locally with `fdroid scanner <apk> --exit-code` (not just `fdroid build`) before pushing — exit code 0, no problems found. Pushed to the MR branch; new CI pipeline triggered automatically.
 
-**Not yet confirmed**: as of 2026-09-17 ~17:50, that new pipeline (`2858758122`, commit `bc9f90fb`) was still running — `fdroid build`/`checkupdates`/`tools check scripts`/`fdroid rewritemeta` in progress, `check apk` job not started yet. Check its actual result before assuming the fix worked:
+**Confirmed fixed**: pipeline `2858758122` (commit `bc9f90fb`) finished on 2026-09-17 — every job passed, including `check apk`. The `dependenciesInfo` fix works; no further recipe changes needed for this rejection. Re-check any future pipeline the same way:
 ```bash
-curl -s "https://gitlab.com/api/v4/projects/SusieeTheLinuxUser%2Ffdroiddata/pipelines/2858758122" | python3 -c "import json,sys; print(json.load(sys.stdin)['status'])"
-curl -s "https://gitlab.com/api/v4/projects/SusieeTheLinuxUser%2Ffdroiddata/pipelines/2858758122/jobs" | python3 -c "
+curl -s "https://gitlab.com/api/v4/projects/SusieeTheLinuxUser%2Ffdroiddata/pipelines/<id>" | python3 -c "import json,sys; print(json.load(sys.stdin)['status'])"
+curl -s "https://gitlab.com/api/v4/projects/SusieeTheLinuxUser%2Ffdroiddata/pipelines/<id>/jobs" | python3 -c "
 import json,sys
 for j in json.load(sys.stdin): print(j['name'], j['status'])"
 ```
-The GitHub Releases build for v0.1.1 was also still running at the same moment — check `https://github.com/SusieeTheLinuxUser/Lil-Ptero/actions` / `https://github.com/SusieeTheLinuxUser/Lil-Ptero/releases`. Job-level GitLab logs (not just status) need browser auth — the public API works for status/job-lists but not job traces; ask the user to paste log output if a job fails and the reason isn't obvious from status alone.
+The GitHub Releases build for v0.1.1 also finished successfully — the signed APK is published at [github.com/SusieeTheLinuxUser/Lil-Ptero/releases](https://github.com/SusieeTheLinuxUser/Lil-Ptero/releases). Job-level GitLab logs (not just status) need browser auth — the public API works for status/job-lists but not job traces; ask the user to paste log output if a job fails and the reason isn't obvious from status alone.
 
 ## Important: F-Droid re-signs the APK
 
