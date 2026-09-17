@@ -1,18 +1,23 @@
-# DRAFT F-Droid build recipe for Pterodactyl Mobile (Lil-Ptero).
+# F-Droid build recipe for Pterodactyl Mobile (Lil-Ptero).
 #
-# This file is NOT submitted anywhere yet — it's a working copy kept in this
-# repo for reference. To actually submit: fork https://gitlab.com/fdroid/fdroiddata,
+# TESTED: this exact recipe was run through a real local `fdroid build` (not
+# just `fdroid lint`) using fdroidserver 2.4.2 and actually produced
+# build/app/outputs/flutter-apk/app-release.apk successfully. See
+# fdroid/README.md for how that test was set up and how to redo it.
+#
+# Still not submitted anywhere — it's a working copy kept in this repo for
+# reference. To actually submit: fork https://gitlab.com/fdroid/fdroiddata,
 # copy this file (comments stripped — F-Droid asks for that) to
-# metadata/dev.susiee.lilptero.yml in that fork, test it locally with
-# fdroidserver, then open a merge request.
-# See fdroid/README.md in this repo for the full step-by-step process.
+# metadata/dev.susiee.lilptero.yml in that fork, and open a merge request.
+# See fdroid/README.md for the full step-by-step process.
 #
 # Modeled on a real, currently-building Flutter recipe already in fdroiddata
 # (com.iakmds.librecamera.yml — "Libre Camera") rather than guessed syntax.
-# Simplified from an earlier draft of this file that copied the official
-# template's advanced reproducible-build/upstream-path machinery, which
-# LibreCamera's real (accepted, building) recipe doesn't actually need for
-# a basic submission.
+# An earlier draft had a `scanignore: [$$flutter$$/bin/cache]` entry copied
+# from F-Droid's official template — removed, because it broke the real
+# build: that path doesn't exist yet when the source scanner runs (it's only
+# created once `flutter pub get`/`flutter build` execute, which happens
+# later). LibreCamera's real recipe doesn't have one either.
 
 Categories:
   - Internet
@@ -39,9 +44,6 @@ Builds:
       - $$flutter$$/bin/flutter config --no-analytics
       - $$flutter$$/bin/flutter pub get --enforce-lockfile
       - $$flutter$$/bin/flutter build apk --release
-    scanignore:
-      # Downloaded Dart/Flutter tooling cache, not part of our source.
-      - $$flutter$$/bin/cache
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags

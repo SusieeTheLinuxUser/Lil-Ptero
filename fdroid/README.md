@@ -1,6 +1,6 @@
 # Submitting to F-Droid
 
-Status: **recipe drafted and updated for the real v0.1.0 tag, not yet tested or submitted.** [dev.susiee.lilptero.yml](dev.susiee.lilptero.yml) in this folder is a working copy kept here for reference — it isn't live anywhere. F-Droid's actual metadata lives in a separate repo ([fdroiddata](https://gitlab.com/fdroid/fdroiddata)) that you submit a merge request against.
+Status: **recipe is written, linted, and build-tested locally — it actually produces a working APK via `fdroid build`.** [dev.susiee.lilptero.yml](dev.susiee.lilptero.yml) in this folder is a working copy kept here for reference — it isn't live anywhere yet. F-Droid's actual metadata lives in a separate repo ([fdroiddata](https://gitlab.com/fdroid/fdroiddata)) that you submit a merge request against. Only one real blocker is left: a GitLab account (see below).
 
 ## Important: F-Droid re-signs the APK
 
@@ -17,6 +17,7 @@ F-Droid's build server compiles the app from source **on their own infrastructur
 - `pubspec.lock` is committed, so dependency versions are pinned/reproducible ✓
 - v0.1.0 is tagged and its GitHub Release build works, so `commit:` in the recipe points at a real, working commit (`88335637632149d32e23f846df1aa8062df36c20`) ✓
 - `fastlane/metadata/android/en-US/` (title, short/full description, `changelogs/1.txt`) is in this repo — F-Droid's app store listing pulls from here, per the [official quick-start guide](https://f-droid.org/docs/Submitting_to_F-Droid_Quick_Start_Guide/) ✓
+- **The recipe actually builds.** `fdroid build --test dev.susiee.lilptero:1` ran the real F-Droid build pipeline — cloned the Flutter SDK as a pinned srclib, cloned our repo at the tagged commit, ran `flutter pub get` + `flutter build apk --release` inside F-Droid's own scanner/build machinery — and produced a working `app-release.apk`. Not just linted, actually built. ✓
 
 ## Two ways to submit — the direct merge request is the one F-Droid recommends
 
@@ -24,41 +25,68 @@ F-Droid's own [quick-start guide](https://f-droid.org/docs/Submitting_to_F-Droid
 
 ## The build recipe
 
-F-Droid's build server builds Flutter apps by pulling the Flutter SDK in as a pinned `srclib` (not downloading a prebuilt tarball at build time — see the `srclibs: [flutter@3.47.4]` line in the draft recipe). The draft here is modeled on **[com.iakmds.librecamera.yml](https://gitlab.com/fdroid/fdroiddata/-/raw/master/metadata/com.iakmds.librecamera.yml)** — a real, currently-building Flutter app recipe fetched verbatim from fdroiddata, not paraphrased — so the `srclibs`/`build`/`output` shape is proven, not guessed. It's simpler than F-Droid's official template (which adds upstream-path/reproducible-build machinery LibreCamera's real recipe doesn't actually use for a basic submission).
+F-Droid's build server builds Flutter apps by pulling the Flutter SDK in as a pinned `srclib` (not downloading a prebuilt tarball at build time — see the `srclibs: [flutter@3.47.4]` line in the recipe). It's modeled on **[com.iakmds.librecamera.yml](https://gitlab.com/fdroid/fdroiddata/-/raw/master/metadata/com.iakmds.librecamera.yml)** — a real, currently-building Flutter app recipe fetched verbatim from fdroiddata — and confirmed against a real local build, not just guessed syntax. The `flutter` srclib definition itself (`srclibs/flutter.yml`, pointing at `github.com/flutter/flutter.git`) already exists in the real `fdroiddata` repo — you don't need to add it, only my local test harness (a minimal fake workspace, not a full `fdroiddata` clone) needed a copy of it.
 
-## What I couldn't finish for you
+## How the local build test was done (reproducible on your machine too)
 
-Two things need to happen on your side specifically — I hit hard walls on both in this environment:
+`fdroidserver` doesn't need `sudo` at all — [F-Droid's own docs](https://f-droid.org/docs/Installing_the_Server_and_Repo_Tools/#fedoraarchlinux) recommend a plain Python venv install for Fedora/Arch:
 
-1. **Local test build.** `fdroidserver` isn't in the official Arch repos (AUR only), and installing anything here needs an interactive `sudo` password I don't have access to. Run this yourself:
-   ```bash
-   yay -S fdroidserver   # or paru -S fdroidserver
-   ```
-   Then, from a clone of your `fdroiddata` fork with this recipe copied in:
-   ```bash
-   fdroid build --verbose dev.susiee.lilptero:1
-   ```
-   This is the step most likely to need iteration — fix whatever it complains about before submitting.
+```bash
+git clone https://gitlab.com/fdroid/fdroidserver.git ~/development/fdroidserver
+cd ~/development/fdroidserver
+python3 -m venv env
+source env/bin/activate
+pip install -e .
+```
 
-2. **GitLab account.** Forking `fdroiddata` and opening a merge request needs a GitLab.com account tied to your own SSH key or login — I checked and this machine's SSH key isn't registered with GitLab (`git@gitlab.com` auth fails), and creating accounts on your behalf isn't something I do. Set one up yourself if you don't have one, add this machine's SSH key (`~/.ssh/id_ed25519.pub`) to it, then the fork/MR steps below will work the same way GitHub already does here.
+Then, since testing one recipe doesn't need the *entire* `fdroiddata` repo (thousands of other apps' metadata), a minimal workspace works:
+
+```bash
+mkdir -p ~/development/fdroid-test-repo/{metadata,srclibs,config}
+cd ~/development/fdroid-test-repo
+# the recipe itself, comments stripped:
+cp /path/to/Lil-Ptero/fdroid/dev.susiee.lilptero.yml metadata/
+# F-Droid validates Categories/AntiFeatures against real config files:
+curl -sf https://gitlab.com/fdroid/fdroiddata/-/raw/master/config/categories.yml -o config/categories.yml
+curl -sf https://gitlab.com/fdroid/fdroiddata/-/raw/master/config/antiFeatures.yml -o config/antiFeatures.yml
+# those configs reference icon files that must exist (content doesn't matter for testing):
+grep -oP '(?<=icon: ).*' config/categories.yml config/antiFeatures.yml | cut -d: -f2 | sort -u | xargs -I{} touch config/{}
+# the flutter srclib definition (already in real fdroiddata, just not in this fake workspace):
+cat > srclibs/flutter.yml << 'EOF'
+RepoType: git
+Repo: https://github.com/flutter/flutter.git
+EOF
+```
+
+```bash
+source ~/development/fdroidserver/env/bin/activate
+export ANDROID_HOME=~/Android/Sdk   # wherever your Android SDK is
+fdroid lint dev.susiee.lilptero            # fast metadata check
+fdroid build --test --no-tarball -v dev.susiee.lilptero:1   # the real build
+```
+
+First run will clone the full Flutter SDK repo (a few hundred MB, ~1 min) into `build/srclib/flutter` and our repo into `build/dev.susiee.lilptero` — both get reused on subsequent runs.
+
+## What's left — GitLab account
+
+The only remaining blocker is a GitLab.com account — forking `fdroiddata` and opening a merge request needs one tied to your own SSH key or login. I checked and this machine's SSH key isn't registered with GitLab (`git@gitlab.com` auth fails), and creating accounts on someone's behalf isn't something I do. Set one up yourself, add this machine's SSH key (`~/.ssh/id_ed25519.pub`) to it, and everything below works the same way GitHub already does here.
 
 ## Step by step
 
 1. ~~Cut a real release~~ — done, `v0.1.0` is tagged and its GitHub Release build succeeded.
-2. ~~Fill in the recipe~~ — done, `dev.susiee.lilptero.yml` has the real `versionCode`/`versionName`/`commit`.
+2. ~~Write and test the recipe~~ — done, linted *and* build-tested locally (see above).
 3. ~~Add fastlane metadata~~ — done, `fastlane/metadata/android/en-US/`.
 4. **Create a GitLab account** if you don't have one, and add this machine's SSH key (`~/.ssh/id_ed25519.pub`) to it.
-5. **Install `fdroidserver`** (`yay -S fdroidserver`) — this is on you, see the blocker note above.
-6. **Fork [fdroiddata](https://gitlab.com/fdroid/fdroiddata)**, clone it, and make a branch named after the app ID (`dev.susiee.lilptero`).
-7. Copy `fdroid/dev.susiee.lilptero.yml` into the fork as `metadata/dev.susiee.lilptero.yml`, with the comments stripped (F-Droid asks for that).
-8. Run `fdroid lint dev.susiee.lilptero`, then `fdroid build --verbose dev.susiee.lilptero:1`, and fix whatever either one complains about — this is the step most likely to need iteration.
-9. Commit as `New App: dev.susiee.lilptero` (their convention) and open a merge request against `fdroiddata`.
-10. **Wait for review.** Volunteer-run queue, days to weeks. Reviewers may ask for changes.
-11. Once merged, the app appears in the official F-Droid repo within a build cycle or two.
+5. **Fork [fdroiddata](https://gitlab.com/fdroid/fdroiddata)**, clone it, and make a branch named after the app ID (`dev.susiee.lilptero`).
+6. Copy `fdroid/dev.susiee.lilptero.yml` into the fork as `metadata/dev.susiee.lilptero.yml`, with the comments stripped (F-Droid asks for that).
+7. From inside that real `fdroiddata` clone, re-run `fdroid lint dev.susiee.lilptero` and `fdroid build --test dev.susiee.lilptero:1` once more — the real repo already has all the `config/`/`srclibs/` files my fake workspace needed recreated, so this should just work.
+8. Commit as `New App: dev.susiee.lilptero` (their convention) and open a merge request against `fdroiddata`.
+9. **Wait for review.** Volunteer-run queue, days to weeks. Reviewers may ask for changes.
+10. Once merged, the app appears in the official F-Droid repo within a build cycle or two.
 
 Optionally, also file the (much cheaper) [RFP issue](https://gitlab.com/fdroid/rfp/-/issues/new) in parallel — just needs the GitLab account from step 4, no SSH or local build. A ready-to-paste version is in [rfp-issue-draft.md](rfp-issue-draft.md) — before checking the "complies with the inclusion criteria" box, skim [f-droid.org/wiki/page/Inclusion_Policy](https://f-droid.org/wiki/page/Inclusion_Policy) yourself; it's your claim to F-Droid, not something to take on my word.
 
-Ping me once you've got a GitLab account and `fdroidserver` installed — I can pick the rest back up (drive `fdroid build`, iterate on the recipe based on its output, prep the fork/branch/commit for the MR) as long as you're driving the actual GitLab auth and the sudo-gated installs.
+Ping me once you've got a GitLab account — I can pick the rest back up (fork, branch, commit, open the MR) since `fdroidserver` is already installed and the recipe is already proven to build.
 
 ## Faster alternative: self-hosted repo
 
