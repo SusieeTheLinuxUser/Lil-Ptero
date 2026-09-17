@@ -1,0 +1,1 @@
+Release APKs are now split per CPU architecture (armeabi-v7a/arm64-v8a/x86_64) instead of one universal APK, per F-Droid's ABI-split guidance — smaller downloads, no functional changes.
