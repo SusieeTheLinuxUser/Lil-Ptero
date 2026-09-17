@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/icon/icon.png" width="140" alt="Pterodactyl Mobile logo">
+</p>
+
 # Pterodactyl Mobile
 
 A free, open-source Android app for viewing and controlling Minecraft servers hosted behind any [Pterodactyl](https://pterodactyl.io/) panel — no matter who's hosting them.

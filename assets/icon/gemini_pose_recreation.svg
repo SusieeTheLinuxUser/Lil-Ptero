@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <rect width="100%" height="100%" fill="#140f0d" />
+
+  <!-- Fan of facets radiating from a central hub, matching the swept-wing pose -->
+  <g stroke="#000000" stroke-width="3" stroke-linejoin="round">
+    <polygon points="260,260 480,60  330,100" fill="#ff9900" />
+    <polygon points="260,260 330,100 270,70"  fill="#e03e00" />
+    <polygon points="260,260 270,70  200,130" fill="#3b2d27" />
+    <polygon points="260,260 200,130 40,185"  fill="#c41200" />
+    <polygon points="260,260 40,185  150,235" fill="#e62200" />
+    <polygon points="260,260 150,235 170,320" fill="#ff7700" />
+    <polygon points="260,260 170,320 270,430" fill="#ffcc00" />
+    <polygon points="260,260 270,430 370,340" fill="#ff4d00" />
+    <polygon points="260,260 370,340 390,200" fill="#4a3931" />
+    <polygon points="260,260 390,200 480,60"  fill="#f05400" />
+  </g>
+</svg>

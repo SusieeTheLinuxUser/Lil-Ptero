@@ -1,63 +1,31 @@
-<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
-  <g transform="translate(550,482.5) scale(1.08) translate(-550,-482.5)">
-    <!-- crest feathers (behind head) -->
-    <path d="M 460,200 C 430,160 420,110 445,70 C 460,115 462,160 470,200 Z" fill="#FFFFFF"/>
-    <path d="M 430,205 C 400,175 392,135 405,100 C 420,140 425,175 440,205 Z" fill="#FDD835"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="100%" height="100%">
+    <!-- Scaled up around the artwork's bounding-box center so it fills more of the
+         adaptive-icon safe zone (the launcher inset shrinks whatever we give it). -->
+    <g transform="translate(460,415) scale(1.45) translate(-460,-415)">
+      <g transform="translate(10, 20)">
+        <!-- Główny górny grzebień / Dziób ptero (Jasny cyjan) -->
+        <path d="M380,290 L520,210 L440,320 Z" fill="#00e5ff" opacity="0.95"/>
+        <path d="M440,320 L520,210 L650,210 Z" fill="#00b0ff"/>
 
-    <!-- main body/head silhouette (blue-and-gold macaw back/crown) -->
-    <path d="
-      M 250,520
-      C 230,650 300,800 480,870
-      C 560,895 650,880 700,820
-      C 730,780 700,700 640,650
-      C 700,660 760,630 800,560
-      C 840,520 850,480 830,450
-      C 810,430 760,440 720,470
-      C 690,490 690,520 715,540
-      C 650,520 600,480 560,430
-      C 600,380 640,320 610,250
-      C 590,190 520,150 450,160
-      C 400,168 430,200 460,225
-      C 400,230 330,260 300,330
-      C 270,390 250,450 250,520
-      Z"
-      fill="#29B6F6" stroke="#FFFFFF" stroke-width="16" stroke-linejoin="round"/>
+        <!-- Górne fasetki cieniowane (Ciemny teal) -->
+        <path d="M380,290 L440,320 L420,350 Z" fill="#006064"/>
+        <path d="M440,320 L480,350 L420,350 Z" fill="#00838f"/>
+        <path d="M440,320 L520,210 L480,350 Z" fill="#00bcd4"/>
 
-    <!-- white bare face patch -->
-    <ellipse cx="560" cy="430" rx="130" ry="150" fill="#FFFFFF"/>
+        <!-- Lewe wydłużone pióro / Dziób papugi (Ostry szpic w lewo) -->
+        <path d="M380,290 L420,350 L250,450 Z" fill="#00b0ff"/>
+        <path d="M350,410 L420,350 L250,450 Z" fill="#00e5ff" opacity="0.8"/>
 
-    <!-- eye -->
-    <circle cx="600" cy="410" r="20" fill="#0D2440"/>
+        <!-- Centralny jasny rdzeń (Błękit lodowy / Light Teal) -->
+        <path d="M420,350 L480,350 L450,430 Z" fill="#b2ebf2"/>
+        <path d="M420,350 L450,430 L380,450 Z" fill="#4dd0e1"/>
 
-    <!-- green forehead accent -->
-    <path d="M 480,290 C 520,260 580,260 610,290 C 580,320 520,320 480,290 Z" fill="#43A047"/>
-
-    <!-- orange beak -->
-    <path d="
-      M 640,650
-      C 700,660 760,630 800,560
-      C 840,520 850,480 830,450
-      C 810,430 760,440 720,470
-      C 690,490 690,520 715,540
-      C 650,520 600,480 560,430
-      C 610,500 620,580 640,650
-      Z" fill="#FB8C00"/>
-
-    <!-- hooked-tip shading, kept fully inside the beak fill -->
-    <path d="
-      M 830,450
-      C 850,478 848,508 818,533
-      C 832,505 830,478 812,458
-      C 817,452 824,450 830,450
-      Z" fill="#E65100"/>
-
-    <!-- yellow chest -->
-    <path d="
-      M 480,870
-      C 560,895 650,880 700,820
-      C 730,780 700,700 640,650
-      C 600,700 560,760 540,830
-      C 530,850 500,865 480,870
-      Z" fill="#FDD835"/>
-  </g>
+        <!-- Dolna bryła / Korpus (Mocny nasycony cyjan) -->
+        <path d="M450,430 L480,350 L530,440 Z" fill="#00bcd4"/>
+        <path d="M450,430 L530,440 L560,540 Z" fill="#00b0ff"/>
+        <path d="M450,430 L560,540 L490,580 Z" fill="#00e5ff"/>
+        <path d="M380,450 L450,430 L490,580 Z" fill="#00b0ff"/>
+        <path d="M380,450 L490,580 L450,510 Z" fill="#00838f"/>
+      </g>
+    </g>
 </svg>

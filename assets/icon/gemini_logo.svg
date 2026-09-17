@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <!-- Background Dark Canvas -->
+  <rect width="100%" height="100%" fill="#140f0d" />
+
+  <g transform="translate(10, 10)">
+    <!-- THE BEAK / LONG NOSE (Bright Orange & Red Facets) -->
+    <polygon points="260,130 330,140 260,165" fill="#e03e00" stroke="#140f0d" stroke-width="1.5" />
+    <polygon points="260,130 260,165 200,195" fill="#f05400" stroke="#140f0d" stroke-width="1.5" />
+
+    <!-- REAR HEAD CREST (Pointing Left) -->
+    <polygon points="200,195 180,240 120,310" fill="#d64200" stroke="#140f0d" stroke-width="1.5" />
+    <polygon points="200,195 150,265 120,310" fill="#ad2600" stroke="#140f0d" stroke-width="1.5" />
+
+    <!-- CROWN & EYE CAVITY (Darker Accent Triangles) -->
+    <polygon points="200,195 235,170 260,130" fill="#4d3b34" stroke="#140f0d" stroke-width="1.5" />
+    <polygon points="200,195 240,215 235,170" fill="#3b2d27" stroke="#140f0d" stroke-width="1.5" />
+
+    <!-- MID FACE & CHEEK (Vibrant Reds) -->
+    <polygon points="200,195 220,280 160,260" fill="#c41200" stroke="#140f0d" stroke-width="1.5" />
+    <polygon points="200,195 240,215 220,280" fill="#e62200" stroke="#140f0d" stroke-width="1.5" />
+
+    <!-- CENTRAL FLUID SPIKES (Center Center Elements) -->
+    <polygon points="240,215 250,270 220,280" fill="#ff7700" stroke="#140f0d" stroke-width="1.5" />
+    <polygon points="240,215 270,215 250,270" fill="#ff9900" stroke="#140f0d" stroke-width="1.5" />
+
+    <!-- JAW & LOWER BRIGHT CHEEK (Gold Yellows) -->
+    <polygon points="270,215 295,290 250,270" fill="#ffcc00" stroke="#140f0d" stroke-width="1.5" />
+    <polygon points="270,215 285,190 295,290" fill="#ffe033" stroke="#140f0d" stroke-width="1.5" />
+
+    <!-- LOWER NECK / BASE CHIP (Deep Orange Base) -->
+    <polygon points="220,280 250,270 235,400" fill="#ff4d00" stroke="#140f0d" stroke-width="1.5" />
+    <polygon points="250,270 295,290 235,400" fill="#e63900" stroke="#140f0d" stroke-width="1.5" />
+
+    <!-- REAR THROAT SHADOW (Dark Brown/Grey Base Triangle) -->
+    <polygon points="295,290 305,370 235,400" fill="#4a3931" stroke="#140f0d" stroke-width="1.5" />
+  </g>
+</svg>
