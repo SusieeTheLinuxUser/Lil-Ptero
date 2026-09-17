@@ -2,13 +2,17 @@
 #
 # This file is NOT submitted anywhere yet — it's a working copy kept in this
 # repo for reference. To actually submit: fork https://gitlab.com/fdroid/fdroiddata,
-# copy this file (with the placeholders below filled in) to metadata/dev.susiee.lilptero.yml
-# in that fork, test it locally with fdroidserver, then open a merge request.
+# copy this file (comments stripped — F-Droid asks for that) to
+# metadata/dev.susiee.lilptero.yml in that fork, test it locally with
+# fdroidserver, then open a merge request.
 # See fdroid/README.md in this repo for the full step-by-step process.
 #
-# Modeled on F-Droid's official Flutter template (templates/build-flutter.yml
-# in fdroiddata) and the real-world dev.imranr.obtainium.fdroid.yml recipe,
-# simplified since we ship one universal APK (no split-per-abi).
+# Modeled on a real, currently-building Flutter recipe already in fdroiddata
+# (com.iakmds.librecamera.yml — "Libre Camera") rather than guessed syntax.
+# Simplified from an earlier draft of this file that copied the official
+# template's advanced reproducible-build/upstream-path machinery, which
+# LibreCamera's real (accepted, building) recipe doesn't actually need for
+# a basic submission.
 
 Categories:
   - Internet
@@ -23,33 +27,21 @@ RepoType: git
 Repo: https://github.com/SusieeTheLinuxUser/Lil-Ptero.git
 
 Builds:
-  # FIXME: fill in once v0.1.0 is actually tagged and pushed — `commit` must be
-  # a real tag/commit that exists in the repo, not a placeholder.
   - versionName: '0.1.0'
     versionCode: 1
-    commit: v0.1.0
-    submodules: false
-    sudo:
-      - mkdir -p /upstream/lilptero
-      - chown -R vagrant /upstream/lilptero
+    commit: 88335637632149d32e23f846df1aa8062df36c20 # tag v0.1.0
     output: build/app/outputs/flutter-apk/app-release.apk
-    # Flutter isn't vendored as a submodule, so pull it in as a pinned srclib
-    # instead (matches our GitHub Actions release workflow's pinned version —
-    # keep these in sync when bumping Flutter).
+    # Pinned to match .github/workflows/release.yml's flutter-version — keep
+    # these in sync when bumping Flutter.
     srclibs:
       - flutter@3.47.4
-    prebuild:
-      - export PUB_CACHE=$(pwd)/.pub-cache
+    build:
       - $$flutter$$/bin/flutter config --no-analytics
       - $$flutter$$/bin/flutter pub get --enforce-lockfile
-    scanignore:
-      # Downloaded Dart/Flutter tooling caches, not part of our source.
-      - $$flutter$$/bin/cache
-    scandelete:
-      - .pub-cache
-    build:
-      - export PUB_CACHE=$(pwd)/.pub-cache
       - $$flutter$$/bin/flutter build apk --release
+    scanignore:
+      # Downloaded Dart/Flutter tooling cache, not part of our source.
+      - $$flutter$$/bin/cache
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags

@@ -20,6 +20,7 @@ android/key.properties
 .idea/
 *.iml
 .vscode/
+.claude/
 
 # macOS
 .DS_Store
