@@ -1,4 +1,4 @@
-package com.example.pterodactyl_mobile
+package dev.susiee.lilptero
 
 import io.flutter.embedding.android.FlutterActivity
 

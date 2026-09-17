@@ -38,6 +38,10 @@ v1 in progress: server list, resource stats, power controls, and live console. A
    flutter run
    ```
 
+## Installing
+
+No releases published yet. Once available: [GitHub Releases](https://github.com/SusieeTheLinuxUser/Lil-Ptero/releases) will have a downloadable APK, and an [F-Droid submission](fdroid/README.md) is in prep (not yet live).
+
 ## Getting a Client API key
 
 In your Pterodactyl panel, go to **Account Settings → API Credentials** and create a new Client API key. Use that (not an Application/admin key) along with your panel's base URL (e.g. `https://panel.example.com`) in the app's setup screen.
