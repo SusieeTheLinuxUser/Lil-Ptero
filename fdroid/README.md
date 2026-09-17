@@ -1,6 +1,6 @@
 # Submitting to F-Droid
 
-Status: **recipe is written, linted, and build-tested locally — it actually produces a working APK via `fdroid build`.** [dev.susiee.lilptero.yml](dev.susiee.lilptero.yml) in this folder is a working copy kept here for reference — it isn't live anywhere yet. F-Droid's actual metadata lives in a separate repo ([fdroiddata](https://gitlab.com/fdroid/fdroiddata)) that you submit a merge request against. Only one real blocker is left: a GitLab account (see below).
+Status: **submitted.** [Merge request !49236](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/49236) is open against `fdroiddata`, from a fork at `gitlab.com/SusieeTheLinuxUser/fdroiddata` (branch `dev.susiee.lilptero`). [dev.susiee.lilptero.yml](dev.susiee.lilptero.yml) in this folder is kept in sync with `metadata/dev.susiee.lilptero.yml` in that fork — edit it here first, re-test (see below), then apply the same change there and push to the `dev.susiee.lilptero` branch to update the MR. Now waiting on F-Droid's CI and volunteer review.
 
 ## Important: F-Droid re-signs the APK
 
@@ -67,26 +67,27 @@ fdroid build --test --no-tarball -v dev.susiee.lilptero:1   # the real build
 
 First run will clone the full Flutter SDK repo (a few hundred MB, ~1 min) into `build/srclib/flutter` and our repo into `build/dev.susiee.lilptero` — both get reused on subsequent runs.
 
-## What's left — GitLab account
+## Current state and local setup
 
-The only remaining blocker is a GitLab.com account — forking `fdroiddata` and opening a merge request needs one tied to your own SSH key or login. I checked and this machine's SSH key isn't registered with GitLab (`git@gitlab.com` auth fails), and creating accounts on someone's behalf isn't something I do. Set one up yourself, add this machine's SSH key (`~/.ssh/id_ed25519.pub`) to it, and everything below works the same way GitHub already does here.
+Everything needed to get here is already set up on this machine (and reproducible on any other via the commands above):
 
-## Step by step
+- GitLab account created, this machine's SSH key added to it, `git@gitlab.com` auth confirmed working.
+- Fork exists at `gitlab.com/SusieeTheLinuxUser/fdroiddata`, cloned locally at `~/development/fdroiddata` (shallow clone, `master` branch only — this repo has ~9,200 metadata files, don't do a full clone).
+- `fdroidserver` installed at `~/development/fdroidserver` via the sudo-free venv method (see below) — activate with `source ~/development/fdroidserver/env/bin/activate` before running any `fdroid` command.
+- Work happens on the `dev.susiee.lilptero` branch in that fork clone. It's already pushed and the MR (!49236) is open against it — new commits pushed to that branch update the MR automatically, no need to open a new one.
+
+## Step by step (already done once — for reference / redoing after CI feedback)
 
 1. ~~Cut a real release~~ — done, `v0.1.0` is tagged and its GitHub Release build succeeded.
 2. ~~Write and test the recipe~~ — done, linted *and* build-tested locally (see above).
 3. ~~Add fastlane metadata~~ — done, `fastlane/metadata/android/en-US/`.
-4. **Create a GitLab account** if you don't have one, and add this machine's SSH key (`~/.ssh/id_ed25519.pub`) to it.
-5. **Fork [fdroiddata](https://gitlab.com/fdroid/fdroiddata)**, clone it, and make a branch named after the app ID (`dev.susiee.lilptero`).
-6. Copy `fdroid/dev.susiee.lilptero.yml` into the fork as `metadata/dev.susiee.lilptero.yml`, with the comments stripped (F-Droid asks for that).
-7. From inside that real `fdroiddata` clone, re-run `fdroid lint dev.susiee.lilptero` and `fdroid build --test dev.susiee.lilptero:1` once more — the real repo already has all the `config/`/`srclibs/` files my fake workspace needed recreated, so this should just work.
-8. Commit as `New App: dev.susiee.lilptero` (their convention) and open a merge request against `fdroiddata`.
-9. **Wait for review.** Volunteer-run queue, days to weeks. Reviewers may ask for changes.
-10. Once merged, the app appears in the official F-Droid repo within a build cycle or two.
+4. ~~Create a GitLab account~~, add SSH key, ~~fork `fdroiddata`~~ — all done.
+5. ~~Clone the fork, branch `dev.susiee.lilptero`, copy the recipe in (comments stripped via `fdroid rewritemeta`), commit as `New App: dev.susiee.lilptero`, push~~ — done.
+6. ~~Open the merge request~~ — done, [!49236](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/49236), using their "App inclusion" MR template.
+7. **Waiting on F-Droid's CI pipeline and volunteer review.** Volunteer-run queue, days to weeks. Reviewers may ask for changes — if so, edit the recipe in *this* repo, re-test locally (see above), copy the change into `~/development/fdroiddata/metadata/dev.susiee.lilptero.yml`, commit, and push to the `dev.susiee.lilptero` branch — that updates the existing MR.
+8. Once merged, the app appears in the official F-Droid repo within a build cycle or two.
 
-Optionally, also file the (much cheaper) [RFP issue](https://gitlab.com/fdroid/rfp/-/issues/new) in parallel — just needs the GitLab account from step 4, no SSH or local build. A ready-to-paste version is in [rfp-issue-draft.md](rfp-issue-draft.md) — before checking the "complies with the inclusion criteria" box, skim [f-droid.org/wiki/page/Inclusion_Policy](https://f-droid.org/wiki/page/Inclusion_Policy) yourself; it's your claim to F-Droid, not something to take on my word.
-
-Ping me once you've got a GitLab account — I can pick the rest back up (fork, branch, commit, open the MR) since `fdroidserver` is already installed and the recipe is already proven to build.
+The RFP issue ([rfp-issue-draft.md](rfp-issue-draft.md)) was not filed — the direct MR was opened instead, per F-Droid's own recommendation (see above). If a future agent is asked to file it anyway, skim [f-droid.org/wiki/page/Inclusion_Policy](https://f-droid.org/wiki/page/Inclusion_Policy) before checking the "complies with the inclusion criteria" box — that's a claim made to F-Droid, not something to check on a memory of this file alone.
 
 ## Faster alternative: self-hosted repo
 
