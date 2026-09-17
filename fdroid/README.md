@@ -1,6 +1,12 @@
 # Submitting to F-Droid
 
-Status: **submitted.** [Merge request !49236](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/49236) is open against `fdroiddata`, from a fork at `gitlab.com/SusieeTheLinuxUser/fdroiddata` (branch `dev.susiee.lilptero`). [dev.susiee.lilptero.yml](dev.susiee.lilptero.yml) in this folder is kept in sync with `metadata/dev.susiee.lilptero.yml` in that fork — edit it here first, re-test (see below), then apply the same change there and push to the `dev.susiee.lilptero` branch to update the MR. Now waiting on F-Droid's CI and volunteer review.
+Status: **submitted, one round of CI feedback fixed.** [Merge request !49236](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/49236) is open against `fdroiddata`, from a fork at `gitlab.com/SusieeTheLinuxUser/fdroiddata` (branch `dev.susiee.lilptero`). [dev.susiee.lilptero.yml](dev.susiee.lilptero.yml) in this folder is kept in sync with `metadata/dev.susiee.lilptero.yml` in that fork — edit it here first, re-test (see below), then apply the same change there and push to the `dev.susiee.lilptero` branch to update the MR. Currently pointing at v0.1.1 (versionCode 2) after v0.1.0's CI rejection — see "CI feedback so far" below. Now waiting on F-Droid's CI and volunteer review.
+
+## CI feedback so far
+
+**v0.1.0 (versionCode 1) — rejected by CI.** The `check apk` job failed: `ERROR Found extra signing block 'Dependency metadata'`. Android Gradle Plugin embeds a dependency-metadata block in the APK signing block by default, for Play Console's dependency-vulnerability scanning — irrelevant since we don't publish there, and F-Droid's scanner treats any extra signing-block content as suspicious and rejects the build outright. `fdroid build` itself had succeeded; this was a separate, stricter scanning job, so don't assume a green `fdroid build` means CI will pass.
+
+**Fix**: added `dependenciesInfo { includeInApk = false; includeInBundle = false }` to `android/app/build.gradle.kts`. Cut v0.1.1 (versionCode 2) with the fix, updated the recipe to point at it, and verified locally with `fdroid scanner <apk> --exit-code` (not just `fdroid build`) before pushing — exit code 0, no problems found. Pushed to the MR branch; new CI pipeline triggered automatically.
 
 ## Important: F-Droid re-signs the APK
 
@@ -15,9 +21,9 @@ F-Droid's build server compiles the app from source **on their own infrastructur
 - MIT licensed (F-Droid requires FOSS licensing) ✓
 - No Google Play Services, Firebase, analytics, crash reporting, or ad SDKs — only `http` and `flutter_secure_storage` (Android Keystore, no proprietary backend) ✓
 - `pubspec.lock` is committed, so dependency versions are pinned/reproducible ✓
-- v0.1.0 is tagged and its GitHub Release build works, so `commit:` in the recipe points at a real, working commit (`88335637632149d32e23f846df1aa8062df36c20`) ✓
-- `fastlane/metadata/android/en-US/` (title, short/full description, `changelogs/1.txt`) is in this repo — F-Droid's app store listing pulls from here, per the [official quick-start guide](https://f-droid.org/docs/Submitting_to_F-Droid_Quick_Start_Guide/) ✓
-- **The recipe actually builds.** `fdroid build --test dev.susiee.lilptero:1` ran the real F-Droid build pipeline — cloned the Flutter SDK as a pinned srclib, cloned our repo at the tagged commit, ran `flutter pub get` + `flutter build apk --release` inside F-Droid's own scanner/build machinery — and produced a working `app-release.apk`. Not just linted, actually built. ✓
+- v0.1.1 is tagged and its GitHub Release build works, so `commit:` in the recipe points at a real, working commit (`b3f0ae0029a434f02bfb91510268b0f38f70013f`) ✓
+- `fastlane/metadata/android/en-US/` (title, short/full description, per-version changelogs) is in this repo — F-Droid's app store listing pulls from here, per the [official quick-start guide](https://f-droid.org/docs/Submitting_to_F-Droid_Quick_Start_Guide/) ✓
+- **The recipe actually builds *and* passes the scanner.** `fdroid build --test dev.susiee.lilptero:2` ran the real F-Droid build pipeline and produced a working `app-release.apk`; `fdroid scanner tmp/dev.susiee.lilptero_2.apk --exit-code` then ran the same signing-block/non-free-class check CI's `check apk` job runs, with 0 problems. Not just linted, actually built *and* scanned — this two-step check is what caught v0.1.0's rejection, see "CI feedback so far" above. ✓
 
 ## Two ways to submit — the direct merge request is the one F-Droid recommends
 
@@ -61,11 +67,14 @@ EOF
 ```bash
 source ~/development/fdroidserver/env/bin/activate
 export ANDROID_HOME=~/Android/Sdk   # wherever your Android SDK is
-fdroid lint dev.susiee.lilptero            # fast metadata check
-fdroid build --test --no-tarball -v dev.susiee.lilptero:1   # the real build
+fdroid lint dev.susiee.lilptero                              # fast metadata check
+fdroid build --test --no-tarball -v dev.susiee.lilptero:2     # the real build
+fdroid scanner --verbose --exit-code tmp/dev.susiee.lilptero_2.apk   # what CI's "check apk" job actually runs
 ```
 
-First run will clone the full Flutter SDK repo (a few hundred MB, ~1 min) into `build/srclib/flutter` and our repo into `build/dev.susiee.lilptero` — both get reused on subsequent runs.
+(Bump the `:2`/`_2` version codes above to match whatever `versionCode` is currently in the recipe.)
+
+First run will clone the full Flutter SDK repo (a few hundred MB, ~1 min) into `build/srclib/flutter` and our repo into `build/dev.susiee.lilptero` — both get reused on subsequent runs. **Run the `fdroid scanner` step too, not just `fdroid build`** — v0.1.0 passed `fdroid build` cleanly and still got rejected by CI's separate scanner check (see "CI feedback so far" above).
 
 ## Current state and local setup
 
@@ -84,8 +93,9 @@ Everything needed to get here is already set up on this machine (and reproducibl
 4. ~~Create a GitLab account~~, add SSH key, ~~fork `fdroiddata`~~ — all done.
 5. ~~Clone the fork, branch `dev.susiee.lilptero`, copy the recipe in (comments stripped via `fdroid rewritemeta`), commit as `New App: dev.susiee.lilptero`, push~~ — done.
 6. ~~Open the merge request~~ — done, [!49236](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/49236), using their "App inclusion" MR template.
-7. **Waiting on F-Droid's CI pipeline and volunteer review.** Volunteer-run queue, days to weeks. Reviewers may ask for changes — if so, edit the recipe in *this* repo, re-test locally (see above), copy the change into `~/development/fdroiddata/metadata/dev.susiee.lilptero.yml`, commit, and push to the `dev.susiee.lilptero` branch — that updates the existing MR.
-8. Once merged, the app appears in the official F-Droid repo within a build cycle or two.
+7. ~~First CI pipeline~~ — failed on `check apk` (v0.1.0's "Dependency metadata" signing block, see "CI feedback so far" above); fixed and re-pushed as v0.1.1. New pipeline running.
+8. **Waiting on F-Droid's CI pipeline and volunteer review.** Volunteer-run queue, days to weeks. Reviewers (or CI) may ask for further changes — if so, fix it upstream, cut a new patch release, update the recipe, re-test locally **including `fdroid scanner`** (see above), copy the change into `~/development/fdroiddata/metadata/dev.susiee.lilptero.yml`, commit, and push to the `dev.susiee.lilptero` branch — that updates the existing MR.
+9. Once merged, the app appears in the official F-Droid repo within a build cycle or two.
 
 The RFP issue ([rfp-issue-draft.md](rfp-issue-draft.md)) was not filed — the direct MR was opened instead, per F-Droid's own recommendation (see above). If a future agent is asked to file it anyway, skim [f-droid.org/wiki/page/Inclusion_Policy](https://f-droid.org/wiki/page/Inclusion_Policy) before checking the "complies with the inclusion criteria" box — that's a claim made to F-Droid, not something to check on a memory of this file alone.
 
