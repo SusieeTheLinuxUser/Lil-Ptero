@@ -16,7 +16,7 @@ No account with us, no backend of ours in the middle — the app talks directly 
 
 ## Status
 
-v1 shipped: server list, resource stats, power controls, live console, dark theme with accent presets. Android only for now.
+v0.1.2 shipped: server list, resource stats, power controls, live console, dark theme with accent presets, and per-ABI Android APKs. Android only for now.
 
 ## Getting started (development)
 
@@ -41,7 +41,7 @@ v1 shipped: server list, resource stats, power controls, live console, dark them
 ## Installing
 
 - **GitHub Releases**: grab the latest signed APK from [Releases](https://github.com/SusieeTheLinuxUser/Lil-Ptero/releases) and sideload it.
-- **F-Droid**: [submitted](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/49236), pending review — not yet live in the official repo. See [fdroid/README.md](fdroid/README.md) for status.
+- **F-Droid**: [submitted](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/49236), with reviewer-requested ABI splits and reproducible-build metadata prepared; not yet live in the official repo. See [fdroid/README.md](fdroid/README.md) for the current status and verification evidence.
 
 ## Getting a Client API key
 

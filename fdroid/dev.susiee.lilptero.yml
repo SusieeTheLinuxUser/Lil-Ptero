@@ -11,16 +11,27 @@
 # embeds that block by default for Play Console's dependency-vulnerability
 # scanning, and F-Droid's scanner treats any extra signing-block content as
 # suspicious. Fixed in v0.1.1 (versionCode 2) via `dependenciesInfo {
-# includeInApk = false }` in android/app/build.gradle.kts. This recipe now
-# points at v0.1.1, tested locally the same way v0.1.0 was.
+# includeInApk = false }` in android/app/build.gradle.kts.
+#
+# Second round of CI feedback (reviewer linsui, on the v0.1.1 pipeline):
+# asked for (1) ABI-split builds, (2) reproducible-build metadata. v0.1.2
+# switches to three per-ABI Builds blocks (armeabi-v7a/arm64-v8a/x86_64),
+# each with its own versionCode (base build number * 10 + ABI digit, per
+# https://f-droid.org/en/docs/Submitting_to_F-Droid_Quick_Start_Guide/#setup-abi-split)
+# — matched on the app side by the versionCodeOverride block added to
+# android/app/build.gradle.kts. Verified locally: `flutter build apk
+# --release --split-per-abi --target-platform="android-arm"` (etc., one per
+# ABI, mirroring how F-Droid's build server invokes each Builds block)
+# produces versionCodes 31/32/33 for build number 3, matching this recipe.
+#
+# Reproducible builds use GitHub Actions' checkout and Pub-cache paths. The
+# jni package also needs its Android SDK path mapped to GitHub's standard path;
+# otherwise only libdartjni.so's GNU build ID differs.
 #
 # Modeled on a real, currently-building Flutter recipe already in fdroiddata
-# (com.iakmds.librecamera.yml — "Libre Camera") rather than guessed syntax.
-# An earlier draft had a `scanignore: [$$flutter$$/bin/cache]` entry copied
-# from F-Droid's official template — removed, because it broke the real
-# build: that path doesn't exist yet when the source scanner runs (it's only
-# created once `flutter pub get`/`flutter build` execute, which happens
-# later). LibreCamera's real recipe doesn't have one either.
+# (com.iakmds.librecamera.yml — "Libre Camera") plus F-Droid's own
+# templates/build-flutter.yml template for the ABI-split structure, rather
+# than guessed syntax.
 
 Categories:
   - Internet
@@ -35,21 +46,123 @@ RepoType: git
 Repo: https://github.com/SusieeTheLinuxUser/Lil-Ptero.git
 
 Builds:
-  - versionName: '0.1.1'
-    versionCode: 2
-    commit: b3f0ae0029a434f02bfb91510268b0f38f70013f # tag v0.1.1
-    output: build/app/outputs/flutter-apk/app-release.apk
+  - versionName: '0.1.2'
+    versionCode: 31
+    commit: e7b931f0ca2d9fc96a08d78bd950e07f56823068  # tag v0.1.2
+    sudo:
+      - mkdir -p /home/runner/work/Lil-Ptero
+      - chown -R vagrant /home/runner
+    output: build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
+    binary: https://github.com/SusieeTheLinuxUser/Lil-Ptero/releases/download/v%v/app-armeabi-v7a-release.apk
     # Pinned to match .github/workflows/release.yml's flutter-version — keep
     # these in sync when bumping Flutter.
     srclibs:
       - flutter@3.47.4
-    build:
+    prebuild:
+      - export repo=/home/runner/work/Lil-Ptero/Lil-Ptero
+      - cd ..
+      - mv dev.susiee.lilptero $repo
+      - pushd $repo
+      - export PUB_CACHE=$(pwd)/.pub-cache
       - $$flutter$$/bin/flutter config --no-analytics
       - $$flutter$$/bin/flutter pub get --enforce-lockfile
-      - $$flutter$$/bin/flutter build apk --release
+      - sed -i -e '/project(jni_library/a add_compile_options("-ffile-prefix-map=$$SDK$$=/usr/local/lib/android/sdk")' .pub-cache/hosted/pub.dev/jni-1.0.3/src/CMakeLists.txt
+      - popd
+      - mv $repo dev.susiee.lilptero
+    scandelete:
+      - .pub-cache
+    build:
+      - export repo=/home/runner/work/Lil-Ptero/Lil-Ptero
+      - cd ..
+      - mv dev.susiee.lilptero $repo
+      - pushd $repo
+      - mv .pub-cache /home/runner/.pub-cache
+      - export PUB_CACHE=/home/runner/.pub-cache
+      - $$flutter$$/bin/flutter build apk --release --split-per-abi --target-platform="android-arm"
+      - mv /home/runner/.pub-cache .pub-cache
+      - popd
+      - mv $repo dev.susiee.lilptero
+
+  - versionName: '0.1.2'
+    versionCode: 32
+    commit: e7b931f0ca2d9fc96a08d78bd950e07f56823068  # tag v0.1.2
+    sudo:
+      - mkdir -p /home/runner/work/Lil-Ptero
+      - chown -R vagrant /home/runner
+    output: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+    binary: https://github.com/SusieeTheLinuxUser/Lil-Ptero/releases/download/v%v/app-arm64-v8a-release.apk
+    srclibs:
+      - flutter@3.47.4
+    prebuild:
+      - export repo=/home/runner/work/Lil-Ptero/Lil-Ptero
+      - cd ..
+      - mv dev.susiee.lilptero $repo
+      - pushd $repo
+      - export PUB_CACHE=$(pwd)/.pub-cache
+      - $$flutter$$/bin/flutter config --no-analytics
+      - $$flutter$$/bin/flutter pub get --enforce-lockfile
+      - sed -i -e '/project(jni_library/a add_compile_options("-ffile-prefix-map=$$SDK$$=/usr/local/lib/android/sdk")' .pub-cache/hosted/pub.dev/jni-1.0.3/src/CMakeLists.txt
+      - popd
+      - mv $repo dev.susiee.lilptero
+    scandelete:
+      - .pub-cache
+    build:
+      - export repo=/home/runner/work/Lil-Ptero/Lil-Ptero
+      - cd ..
+      - mv dev.susiee.lilptero $repo
+      - pushd $repo
+      - mv .pub-cache /home/runner/.pub-cache
+      - export PUB_CACHE=/home/runner/.pub-cache
+      - $$flutter$$/bin/flutter build apk --release --split-per-abi --target-platform="android-arm64"
+      - mv /home/runner/.pub-cache .pub-cache
+      - popd
+      - mv $repo dev.susiee.lilptero
+
+  - versionName: '0.1.2'
+    versionCode: 33
+    commit: e7b931f0ca2d9fc96a08d78bd950e07f56823068  # tag v0.1.2
+    sudo:
+      - mkdir -p /home/runner/work/Lil-Ptero
+      - chown -R vagrant /home/runner
+    output: build/app/outputs/flutter-apk/app-x86_64-release.apk
+    binary: https://github.com/SusieeTheLinuxUser/Lil-Ptero/releases/download/v%v/app-x86_64-release.apk
+    srclibs:
+      - flutter@3.47.4
+    prebuild:
+      - export repo=/home/runner/work/Lil-Ptero/Lil-Ptero
+      - cd ..
+      - mv dev.susiee.lilptero $repo
+      - pushd $repo
+      - export PUB_CACHE=$(pwd)/.pub-cache
+      - $$flutter$$/bin/flutter config --no-analytics
+      - $$flutter$$/bin/flutter pub get --enforce-lockfile
+      - sed -i -e '/project(jni_library/a add_compile_options("-ffile-prefix-map=$$SDK$$=/usr/local/lib/android/sdk")' .pub-cache/hosted/pub.dev/jni-1.0.3/src/CMakeLists.txt
+      - popd
+      - mv $repo dev.susiee.lilptero
+    scandelete:
+      - .pub-cache
+    build:
+      - export repo=/home/runner/work/Lil-Ptero/Lil-Ptero
+      - cd ..
+      - mv dev.susiee.lilptero $repo
+      - pushd $repo
+      - mv .pub-cache /home/runner/.pub-cache
+      - export PUB_CACHE=/home/runner/.pub-cache
+      - $$flutter$$/bin/flutter build apk --release --split-per-abi --target-platform="android-x64"
+      - mv /home/runner/.pub-cache .pub-cache
+      - popd
+      - mv $repo dev.susiee.lilptero
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
+# ABI digit goes in the lowest position so F-Droid's client always prefers
+# the newest version across ABIs: armeabi-v7a < arm64-v8a < x86_64.
+VercodeOperation:
+  - '10 * %c + 1'
+  - '10 * %c + 2'
+  - '10 * %c + 3'
 UpdateCheckData: pubspec.yaml|version:\s.+\+(\d+)|.|version:\s(.+)\+
-CurrentVersion: '0.1.1'
-CurrentVersionCode: 2
+CurrentVersion: '0.1.2'
+CurrentVersionCode: 33
+
+AllowedAPKSigningKeys: 940bcf557d80048ecd1bc7f2dd02de8f0d4591592b9922ee8f1af299754d56a6
