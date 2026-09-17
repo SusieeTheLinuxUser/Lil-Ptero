@@ -16,6 +16,11 @@ F-Droid's build server compiles the app from source **on their own infrastructur
 - No Google Play Services, Firebase, analytics, crash reporting, or ad SDKs — only `http` and `flutter_secure_storage` (Android Keystore, no proprietary backend) ✓
 - `pubspec.lock` is committed, so dependency versions are pinned/reproducible ✓
 - v0.1.0 is tagged and its GitHub Release build works, so `commit:` in the recipe points at a real, working commit (`88335637632149d32e23f846df1aa8062df36c20`) ✓
+- `fastlane/metadata/android/en-US/` (title, short/full description, `changelogs/1.txt`) is in this repo — F-Droid's app store listing pulls from here, per the [official quick-start guide](https://f-droid.org/docs/Submitting_to_F-Droid_Quick_Start_Guide/) ✓
+
+## Two ways to submit — the direct merge request is the one F-Droid recommends
+
+F-Droid's own [quick-start guide](https://f-droid.org/docs/Submitting_to_F-Droid_Quick_Start_Guide/) is explicit that a **direct merge request** with your own tested metadata is "apparently the best way to get an app into the repository." Filing an issue against [fdroid/rfp](https://gitlab.com/fdroid/rfp) (their "Requests For Packaging" tracker) is the other option, but it's a lower-commitment "maybe a volunteer will package this" request — no guarantee anyone picks it up. Everything below is set up for the MR path; the RFP issue is just a cheap, non-blocking thing to also file while waiting.
 
 ## The build recipe
 
@@ -41,11 +46,17 @@ Two things need to happen on your side specifically — I hit hard walls on both
 
 1. ~~Cut a real release~~ — done, `v0.1.0` is tagged and its GitHub Release build succeeded.
 2. ~~Fill in the recipe~~ — done, `dev.susiee.lilptero.yml` has the real `versionCode`/`versionName`/`commit`.
-3. **Install `fdroidserver`** and test-build the recipe locally (see above). This is on you — see the blocker note.
-4. **Create a GitLab account** if you don't have one, and add your SSH key to it (see above).
-5. **Fork [fdroiddata](https://gitlab.com/fdroid/fdroiddata)**, add your tested recipe at `metadata/dev.susiee.lilptero.yml` (strip the comments first — F-Droid asks for that), and open a merge request.
-6. **Wait for review.** Volunteer-run queue, days to weeks. Reviewers may ask for changes.
-7. Once merged, the app appears in the official F-Droid repo within a build cycle or two.
+3. ~~Add fastlane metadata~~ — done, `fastlane/metadata/android/en-US/`.
+4. **Create a GitLab account** if you don't have one, and add this machine's SSH key (`~/.ssh/id_ed25519.pub`) to it.
+5. **Install `fdroidserver`** (`yay -S fdroidserver`) — this is on you, see the blocker note above.
+6. **Fork [fdroiddata](https://gitlab.com/fdroid/fdroiddata)**, clone it, and make a branch named after the app ID (`dev.susiee.lilptero`).
+7. Copy `fdroid/dev.susiee.lilptero.yml` into the fork as `metadata/dev.susiee.lilptero.yml`, with the comments stripped (F-Droid asks for that).
+8. Run `fdroid lint dev.susiee.lilptero`, then `fdroid build --verbose dev.susiee.lilptero:1`, and fix whatever either one complains about — this is the step most likely to need iteration.
+9. Commit as `New App: dev.susiee.lilptero` (their convention) and open a merge request against `fdroiddata`.
+10. **Wait for review.** Volunteer-run queue, days to weeks. Reviewers may ask for changes.
+11. Once merged, the app appears in the official F-Droid repo within a build cycle or two.
+
+Optionally, also file the (much cheaper) [RFP issue](https://gitlab.com/fdroid/rfp/-/issues/new) in parallel — just needs the GitLab account from step 4, no SSH or local build. A ready-to-paste version is in [rfp-issue-draft.md](rfp-issue-draft.md) — before checking the "complies with the inclusion criteria" box, skim [f-droid.org/wiki/page/Inclusion_Policy](https://f-droid.org/wiki/page/Inclusion_Policy) yourself; it's your claim to F-Droid, not something to take on my word.
 
 Ping me once you've got a GitLab account and `fdroidserver` installed — I can pick the rest back up (drive `fdroid build`, iterate on the recipe based on its output, prep the fork/branch/commit for the MR) as long as you're driving the actual GitLab auth and the sudo-gated installs.
 
