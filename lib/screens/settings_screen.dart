@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../battery_optimization.dart';
 import '../credentials.dart';
+import '../notification_prefs.dart';
 import '../theme_prefs.dart';
 import 'setup_screen.dart';
 
@@ -55,6 +57,31 @@ class SettingsScreen extends StatelessWidget {
                 );
               },
             ),
+          ),
+          const Divider(),
+          ValueListenableBuilder<bool>(
+            valueListenable: NotificationPrefs.enabled,
+            builder: (context, enabled, _) {
+              return Column(
+                children: [
+                  SwitchListTile(
+                    title: const Text('Server status notifications'),
+                    subtitle: const Text(
+                      'Runs a background service that watches your servers and notifies you if one stops or crashes',
+                    ),
+                    value: enabled,
+                    onChanged: NotificationPrefs.setEnabled,
+                  ),
+                  if (enabled)
+                    const ListTile(
+                      leading: Icon(Icons.battery_alert),
+                      title: Text('Disable battery optimization'),
+                      subtitle: Text('Recommended, so Android doesn\'t stop the watcher to save power'),
+                      onTap: BatteryOptimization.requestIgnore,
+                    ),
+                ],
+              );
+            },
           ),
           const Divider(),
           ListTile(

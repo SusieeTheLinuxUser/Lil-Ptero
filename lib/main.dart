@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'credentials.dart';
+import 'notification_prefs.dart';
 import 'screens/server_list_screen.dart';
 import 'screens/setup_screen.dart';
 import 'theme_prefs.dart';
@@ -8,6 +9,7 @@ import 'theme_prefs.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await ThemePrefs.load();
+  await NotificationPrefs.load();
   runApp(const PterodactylMobileApp());
 }
 
