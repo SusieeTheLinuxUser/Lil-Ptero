@@ -18,7 +18,9 @@ This project is deliberately minimal. Before adding a dependency or an abstracti
 - Plain `Navigator.push`/`MaterialPageRoute` — no `go_router` (the flow is linear, no deep links).
 - Hand-rolled `formatBytes`/`formatUptime` in [lib/format.dart](lib/format.dart) — no `intl`.
 
-Keep following this pattern: reach for the SDK/stdlib/native feature first, and only add a package when there's a genuine gap (the only two real dependencies today are `http` and `flutter_secure_storage` — see [pubspec.yaml](pubspec.yaml) for why).
+Keep following this pattern: reach for the SDK/stdlib/native feature first, and only add a package when there's a genuine gap. Today that's four: `http` and `flutter_secure_storage`, plus `flutter_local_notifications` and `flutter_background_service` for the background monitor (Dart has no way to post an Android notification or run a foreground service on its own). The one-off "ignore battery optimizations" Intent is a ~15-line platform channel in [MainActivity.kt](android/app/src/main/kotlin/dev/susiee/lilptero/MainActivity.kt) rather than a fifth package — prefer that trade when a plugin would exist solely to fire one Intent.
+
+`flutter_local_notifications` requires Java core-library desugaring, which is why `isCoreLibraryDesugaringEnabled` and the `desugar_jdk_libs` dependency are in [android/app/build.gradle.kts](android/app/build.gradle.kts). Don't remove them.
 
 Don't add speculative abstractions, config for values that never change, or scaffolding "for later." A `ponytail:`-style comment in the code marking a deliberate corner cut (e.g. single-page server list fetch, no auto-reconnect backoff) means: that's intentional for v1, not a bug — extend it only when it's actually needed, not preemptively.
 
@@ -33,6 +35,9 @@ lib/
   models.dart                 — PteroServer, ServerResources, WebsocketDetails, ConsoleEvent (sealed), manual fromJson
   format.dart                 — formatBytes, formatUptime
   theme_prefs.dart            — dark-only theme, selectable accent color presets (persisted via flutter_secure_storage)
+  notification_prefs.dart     — opt-in toggle for background monitoring; starts/stops the service, requests POST_NOTIFICATIONS
+  background_monitor.dart     — foreground-service isolate that polls server status and fires stop/crash notifications
+  battery_optimization.dart   — platform channel to MainActivity.kt for Android's battery-exemption prompt
   screens/                    — Setup, Server List, Server Detail (Overview + Console tabs), Settings
   widgets/resource_gauge.dart — shared CPU/RAM/disk bar
 
@@ -53,6 +58,30 @@ dart run flutter_launcher_icons
 
 There is no `models/`/`services/`/`providers/` subfolder split — the file count doesn't justify it. Don't introduce one preemptively.
 
+### Background server-status notifications
+
+Opt-in (off by default) toggle in Settings starts an Android **foreground service** that polls every server's state every 30s via REST and posts a notification when one transitions to offline. It deliberately does *not* hold websockets — one `listServers()` + `getResources()` pass per tick is far less code than N sockets with token refresh in a background isolate. State is diffed against the previous tick, persisted in `flutter_secure_storage`; `shouldNotifyOffline()` is pure and unit-tested.
+
+**Read this before touching `background_monitor.dart`.** Every one of these failed *silently* on a real device — service alive, notification posted, zero work done, no crash and nothing in logcat. They cost hours to find:
+
+- **The `onStart` callback MUST be a public top-level function.** It was a private static method (`BackgroundMonitor._onStart`). `PluginUtilities.getCallbackHandle()` returns a perfectly valid-looking non-zero handle for one, but the background isolate can't resolve it back, so the plugin's entrypoint hits `if (onStart != null)` and does nothing at all. The plugin's docstring says "top-level or static"; in practice only top-level works. Don't move it into a class for tidiness.
+- **Don't pass a custom `notificationChannelId`** unless you create that channel first — the plugin only auto-creates its own default channel when the id is left unset. Passing an uncreated id makes Android reject the foreground notification (`CannotPostForegroundServiceNotificationException`).
+- **`foregroundServiceType` must be declared in our manifest.** The plugin's own manifest declares none and Android 14+ requires one (`MissingForegroundServiceTypeException`). It's merged in via `tools:node="merge"` on the plugin's `<service>`; don't redeclare the whole element, that collides with the plugin's `exported`/`stopWithTask` values.
+- The persistent notification shows a last-checked time on purpose. It's the only cheap signal that the watcher is alive — keep it.
+
+**Verifying on a device.** Dart `print`/`debugPrint` from the service isolate did not reach logcat on the test device, and OEM logcat noise buries everything anyway. What actually works is inspecting Android's own state over adb:
+
+```bash
+adb shell dumpsys activity services dev.susiee.lilptero   # is the FGS alive? isForeground / createTime
+adb shell dumpsys notification --noredact                 # the notification's android.text + numUpdatedByApp
+adb shell dumpsys deviceidle whitelist | grep lilptero    # battery-optimization exemption granted?
+adb shell run-as dev.susiee.lilptero cat /data/data/dev.susiee.lilptero/shared_prefs/id.flutter.background_service.xml
+```
+
+`numUpdatedByApp=0` on the notification is the tell that the isolate never ran. The `shared_prefs` dump (debug builds only — `run-as` won't work on release) shows the stored `background_handle`, which changes whenever the callback function identity changes — useful for confirming `configure()` actually picked up your edit. Debug and release behave identically here; the bugs above are not build-mode artifacts.
+
+**OEM power management.** The standard `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` prompt ([battery_optimization.dart](lib/battery_optimization.dart)) only covers stock Android Doze. Samsung, Xiaomi, OPPO/OnePlus, Huawei etc. each layer their own background killer on top that this prompt doesn't touch — on the OPPO test device, "Allow background activity" in the vendor battery manager was required as well. Consult [dontkillmyapp.com](https://dontkillmyapp.com) for per-vendor specifics before concluding a background bug is ours.
+
 ## Build / test / run
 
 Requires the Flutter SDK (stable channel) and an Android SDK. See [README.md](README.md) for install steps.
@@ -68,6 +97,8 @@ flutter build apk --debug   # sanity-check a full build
 Known local gotcha: if your default JDK is very new (e.g. 21+), the Android Gradle Plugin's `jlink` step can fail. Fix with `flutter config --jdk-dir=/path/to/jdk-17`.
 
 **Always run `flutter analyze` and `flutter test` before considering a change done.** Every non-trivial piece of logic (a branch, a parser, the console state machine) should leave a runnable test behind — see `test/console_state_test.dart` for the pattern (script a sequence of events through a pure state machine, assert the resulting state, no real socket).
+
+`.github/workflows/ci.yml` runs both on every PR and on pushes to `main`; `main` is protected and requires that check to pass. Note that unit tests only cover pure logic — anything touching an Android service, notification, or isolate is invisible to them and **must** be verified on a real device (see the adb recipes above).
 
 ## The Pterodactyl Client API (what this app talks to)
 
