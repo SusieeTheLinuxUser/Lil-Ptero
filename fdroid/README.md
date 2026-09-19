@@ -1,6 +1,6 @@
 # Submitting to F-Droid
 
-Status: **reviewer changes prepared locally; the live MR has not been updated yet.** [Merge request !49236](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/49236) is open against `fdroiddata`, from `gitlab.com/SusieeTheLinuxUser/fdroiddata` branch `dev.susiee.lilptero`. Reviewer `linsui` marked it `waiting-on-response` and requested the Flutter template, per-ABI builds, and reproducible-build metadata. Release `v0.1.2` already contains the ABI work, and the recipe in this folder now makes all three published APKs reproducible. The remaining work is to commit this recipe, copy it to the fdroiddata fork, run the final buildserver/pipeline validation, push, and reply to the reviewer. For a compact agent handoff, read [AI_HANDOFF.md](AI_HANDOFF.md).
+Status: **all reviewer feedback addressed and pushed — waiting on F-Droid, not on us.** [Merge request !49236](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/49236) is open against `fdroiddata`, from `gitlab.com/SusieeTheLinuxUser/fdroiddata` branch `dev.susiee.lilptero` (head `d1d7e706`). Reviewer `linsui` went through three rounds — Flutter template + ABI split, then reproducible-build metadata, then pinning the Flutter version and a version-agnostic JNI patch path — and on 2026-09-18 called the MR "mostly ready," to be tested when they get to it; fdroiddata has a large review backlog. **No action needed unless a new app version ships**, in which case update this MR rather than opening a new one. For a compact agent handoff, read [AI_HANDOFF.md](AI_HANDOFF.md).
 
 ## CI feedback so far
 
@@ -65,7 +65,7 @@ This submission now uses F-Droid's reproducible-build `binary:` path. F-Droid in
 - MIT licensed (F-Droid requires FOSS licensing) ✓
 - No Google Play Services, Firebase, analytics, crash reporting, or ad SDKs — only `http` and `flutter_secure_storage` (Android Keystore, no proprietary backend) ✓
 - `pubspec.lock` is committed, so dependency versions are pinned/reproducible ✓
-- v0.1.2 is tagged and its three GitHub Release APKs work, so each recipe block points at real commit `e7b931f0ca2d9fc96a08d78bd950e07f56823068` ✓
+- v0.1.2 is tagged and its three GitHub Release APKs work, so each recipe block points at real commit `9ce3dd68ca951a26017248fb97c4ba52160baf98` (tag `v0.1.2` — the app repo's history was later rewritten to strip a personal email from commits, which orphaned the original SHA quoted here in earlier revisions; always re-verify with `git ls-remote --tags origin v0.1.2` rather than trusting a hash in prose) ✓
 - `fastlane/metadata/android/en-US/` (title, short/full description, per-version changelogs) is in this repo — F-Droid's app store listing pulls from here, per the [official quick-start guide](https://f-droid.org/docs/Submitting_to_F-Droid_Quick_Start_Guide/) ✓
 - The previous source recipe built and passed the scanner. The current reproducible recipe is lint-clean and all three path-normalized payloads match their published binaries; the final buildserver/pipeline run is still pending because ordinary local mode skips `sudo:` setup. ✓
 
@@ -148,8 +148,10 @@ Everything needed to get here is already set up on this machine (and reproducibl
 7. ~~First CI pipeline~~ — failed on `check apk` (v0.1.0's "Dependency metadata" signing block); fixed in v0.1.1. Pipeline `2858758122` passed.
 8. ~~Prepare reviewer-requested ABI splits~~ — released as v0.1.2 with versionCodes 31/32/33.
 9. ~~Diagnose and fix reproducibility~~ — the app-repo recipe now reproduces all three existing v0.1.2 APKs.
-10. **Next:** commit the recipe, copy it to `~/development/fdroiddata/metadata/dev.susiee.lilptero.yml`, format/lint it, run the buildserver or MR pipeline, push branch `dev.susiee.lilptero`, and reply to `linsui` with the verification summary. No new release is needed.
-11. Once merged, the app appears in the official F-Droid repo within a build cycle or two.
+10. ~~Commit, copy to fdroiddata, run the pipeline, push, reply to `linsui`~~ — done 2026-09-18.
+11. ~~Second reviewer round: pin Flutter version, fix JNI sed path~~ — done same day; full pipeline (`fdroid build`, `check apk`, `fdroid lint`, `fdroid rewritemeta`) passed: https://gitlab.com/SusieeTheLinuxUser/fdroiddata/-/pipelines/2862036916
+12. `linsui` replied: MR is "mostly ready," will be tested against F-Droid's queue. **Nothing to do until either they respond again or a new app version ships.**
+13. Once merged, the app appears in the official F-Droid repo within a build cycle or two.
 
 The RFP issue ([rfp-issue-draft.md](rfp-issue-draft.md)) was not filed — the direct MR was opened instead, per F-Droid's own recommendation (see above). If a future agent is asked to file it anyway, skim [f-droid.org/wiki/page/Inclusion_Policy](https://f-droid.org/wiki/page/Inclusion_Policy) before checking the "complies with the inclusion criteria" box — that's a claim made to F-Droid, not something to check on a memory of this file alone.
 
