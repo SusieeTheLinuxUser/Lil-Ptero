@@ -11,8 +11,10 @@ class ConsoleTab extends StatefulWidget {
   final Credentials credentials;
   final PteroServer server;
   final TabController tabController;
+  final PterodactylApiClient? apiClient;
 
-  const ConsoleTab({super.key, required this.credentials, required this.server, required this.tabController});
+  const ConsoleTab(
+      {super.key, required this.credentials, required this.server, required this.tabController, this.apiClient});
 
   @override
   State<ConsoleTab> createState() => _ConsoleTabState();
@@ -32,7 +34,7 @@ class _ConsoleTabState extends State<ConsoleTab> {
   @override
   void initState() {
     super.initState();
-    _api = PterodactylApiClient(widget.credentials);
+    _api = widget.apiClient ?? PterodactylApiClient(widget.credentials);
     widget.tabController.addListener(_onTabChanged);
     if (widget.tabController.index == 1) _connect();
   }
@@ -55,21 +57,20 @@ class _ConsoleTabState extends State<ConsoleTab> {
   }
 
   Future<void> _connect() async {
+    if (_connecting) return;
     setState(() {
       _connecting = true;
+      _connected = false;
       _error = null;
     });
     final socket = ConsoleSocket(_api, widget.server.identifier);
+    _socket = socket;
     _subscription = socket.events.listen(_handleEvent);
     try {
       await socket.connect();
-      if (!mounted) return;
-      setState(() {
-        _socket = socket;
-        _connecting = false;
-        _connected = true;
-      });
     } catch (_) {
+      await _subscription?.cancel();
+      await socket.dispose();
       if (!mounted) return;
       setState(() {
         _connecting = false;
@@ -81,6 +82,16 @@ class _ConsoleTabState extends State<ConsoleTab> {
   void _handleEvent(ConsoleEvent event) {
     if (!mounted) return;
     switch (event) {
+      case AuthSuccess():
+        setState(() {
+          _connecting = false;
+          _connected = true;
+        });
+      case TokenExpiring():
+        setState(() {
+          _connecting = true;
+          _connected = false;
+        });
       case ConsoleOutput(:final line):
         setState(() {
           _lines.add(line);
@@ -88,7 +99,10 @@ class _ConsoleTabState extends State<ConsoleTab> {
         });
         _scrollToBottom();
       case SocketClosed():
-        setState(() => _connected = false);
+        setState(() {
+          _connecting = false;
+          _connected = false;
+        });
       default:
         break;
     }
@@ -110,6 +124,7 @@ class _ConsoleTabState extends State<ConsoleTab> {
   }
 
   void _reconnect() {
+    if (_connecting) return;
     _subscription?.cancel();
     _socket?.dispose();
     _socket = null;
