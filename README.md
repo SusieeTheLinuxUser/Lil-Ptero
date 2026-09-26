@@ -11,12 +11,19 @@ Connect with your panel URL and a personal Client API key (generated in your Pte
 - See your servers and their live resource usage (CPU, memory, disk)
 - Start / restart / stop / kill a server
 - Watch the live console and send commands
+- Get a notification when a server stops or crashes, even with the app closed (opt-in, in Settings)
 
 No account with us, no backend of ours in the middle — the app talks directly to your panel's API.
 
+### Background notifications
+
+Turning on **Server status notifications** in Settings starts a background service that checks your servers every 30 seconds and notifies you when one goes offline. Android requires a permanent "Pterodactyl Mobile" notification while it runs — that's what keeps the OS from killing it; it shows the time of the last check so you can tell the watcher is alive.
+
+Android will still stop the watcher to save power unless you allow it to run in the background. The Settings screen offers the standard exemption prompt, but **most non-Pixel phones need a second, vendor-specific toggle too** (Samsung, Xiaomi, OPPO/OnePlus, Huawei and others each bury it somewhere different). On OPPO/OnePlus, for example, it's "Allow background activity" in the phone's own battery manager, separate from the standard Android prompt. [dontkillmyapp.com](https://dontkillmyapp.com) has per-manufacturer instructions.
+
 ## Status
 
-v0.1.2 shipped: server list, resource stats, power controls, live console, dark theme with accent presets, and per-ABI Android APKs. Android only for now.
+v0.1.2 shipped: server list, resource stats, power controls, live console, dark theme with accent presets, and per-ABI Android APKs. Android only for now. Background server-status notifications have landed on `main` and will ship in the next release.
 
 ## Getting started (development)
 

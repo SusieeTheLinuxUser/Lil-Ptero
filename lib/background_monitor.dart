@@ -17,6 +17,33 @@ bool shouldNotifyOffline(String? previous, ServerState current) {
   return previous != null && previous != current.name && current == ServerState.offline;
 }
 
+/// Entry point for the background service isolate. Must be a public
+/// top-level function: the plugin resolves it by callback handle from a
+/// separate isolate, and silently does nothing if it can't be resolved.
+@pragma('vm:entry-point')
+void backgroundServiceEntrypoint(ServiceInstance service) {
+  final notifications = FlutterLocalNotificationsPlugin();
+  notifications.initialize(
+    const InitializationSettings(android: AndroidInitializationSettings('@mipmap/ic_launcher')),
+  );
+  service.on('stopService').listen((_) => service.stopSelf());
+
+  Timer.periodic(BackgroundMonitor._pollInterval, (_) async {
+    final now = DateTime.now();
+    final clock = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+    String status;
+    try {
+      await BackgroundMonitor._pollOnce(notifications);
+      status = 'Last checked $clock';
+    } catch (_) {
+      status = 'Check failed at $clock';
+    }
+    if (service is AndroidServiceInstance) {
+      await service.setForegroundNotificationInfo(title: 'Pterodactyl Mobile', content: status);
+    }
+  });
+}
+
 /// Polls every server's status on a timer from an Android foreground
 /// service, so a stop/crash is caught even while the app isn't open —
 /// same idea as a fitness tracker keeping a live connection to a watch.
@@ -37,11 +64,13 @@ class BackgroundMonitor {
     final service = FlutterBackgroundService();
     await service.configure(
       androidConfiguration: AndroidConfiguration(
-        onStart: _onStart,
+        onStart: backgroundServiceEntrypoint,
         isForegroundMode: true,
         autoStart: false,
         autoStartOnBoot: false,
-        notificationChannelId: 'background_monitor',
+        // No custom notificationChannelId: the plugin requires that channel to
+        // already exist before configure() runs if you supply one — leaving
+        // it unset lets it create and use its own default channel instead.
         initialNotificationTitle: 'Pterodactyl Mobile',
         initialNotificationContent: 'Watching your servers',
       ),
@@ -57,20 +86,6 @@ class BackgroundMonitor {
   static Future<void> stop() async {
     final service = FlutterBackgroundService();
     if (await service.isRunning()) service.invoke('stopService');
-  }
-
-  @pragma('vm:entry-point')
-  static void _onStart(ServiceInstance service) {
-    final notifications = FlutterLocalNotificationsPlugin();
-    notifications.initialize(
-      const InitializationSettings(android: AndroidInitializationSettings('@mipmap/ic_launcher')),
-    );
-    service.on('stopService').listen((_) => service.stopSelf());
-
-    Timer.periodic(_pollInterval, (timer) async {
-      if (service is AndroidServiceInstance && !await service.isForegroundService()) return;
-      await _pollOnce(notifications);
-    });
   }
 
   static Future<void> _pollOnce(FlutterLocalNotificationsPlugin notifications) async {
@@ -105,8 +120,6 @@ class BackgroundMonitor {
         }
       }
       await _storage.write(key: _lastStatesKey, value: jsonEncode(currentStates));
-    } catch (_) {
-      // Transient network/API error — try again next tick.
     } finally {
       api.close();
     }

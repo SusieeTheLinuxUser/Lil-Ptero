@@ -2,48 +2,34 @@
 
 Use this file for the current F-Droid task instead of rereading the full project documentation.
 
-## Current state
+## Current state (verified 2026-09-19 against GitLab's API, not assumed from an older summary)
 
-- App: `dev.susiee.lilptero`, release `v0.1.2`, build number `3`.
-- F-Droid MR: [!49236](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/49236), branch `dev.susiee.lilptero` in the `SusieeTheLinuxUser/fdroiddata` fork.
-- Reviewer `linsui` requested the Flutter template, per-ABI builds, and reproducible-build metadata.
-- The ABI work is already released: versionCodes `31`, `32`, and `33` for `armeabi-v7a`, `arm64-v8a`, and `x86_64`.
-- The app-repo recipe contains the reproducibility fix, but it is not committed, copied to `~/development/fdroiddata`, pushed, or posted to the MR yet.
-
-## Reproducibility result
-
-The first comparison failed because build paths differed. Only two APK entries changed:
-
-- `libapp.so` embedded `.dart_tool/flutter_build/dart_plugin_registrant.dart` with the absolute checkout path.
-- `libdartjni.so` differed only in its 20-byte GNU build ID, caused by the Android SDK and Pub-cache paths used by the native `jni` package.
-
-The recipe now:
-
-1. Builds at GitHub's path: `/home/runner/work/Lil-Ptero/Lil-Ptero`.
-2. Downloads dependencies into a project-local `.pub-cache` so F-Droid scans them.
-3. Maps `$$SDK$$` to GitHub's `/usr/local/lib/android/sdk` while compiling `jni`.
-4. Moves the already-scanned cache to `/home/runner/.pub-cache` for compilation.
-5. Uses one `binary:` URL per ABI and the signing certificate fingerprint:
-   `940bcf557d80048ecd1bc7f2dd02de8f0d4591592b9922ee8f1af299754d56a6`.
-
-All three rebuilt APKs became byte-for-byte identical to the published GitHub APK after copying the upstream signature. `apksigner verify`, `fdroid lint`, `flutter analyze`, and all 22 Flutter tests passed.
-
-Published APK SHA-256 values:
-
-- ARMv7: `26f53aef5adf1be4abb3af58fdea77ba9a968aac5102ca1ef5df5d9e0b68f51b`
-- ARM64: `b3bb0264257b404ed5bc371d9013348210ed64d495bcfc9497f139bd9e75a842`
-- x86_64: `12dfa40fc479f3b58951cdc83f87408bd50e7d21d6c0526f783b64cd82e00e92`
+- App: `dev.susiee.lilptero`, release `v0.1.2`, build number `3`. Tag `v0.1.2` = commit `9ce3dd68ca951a26017248fb97c4ba52160baf98` — re-verify with `git ls-remote --tags origin v0.1.2` before trusting any SHA written down here; the app repo's history was rewritten once already (see gotcha below) and orphaned the SHA an earlier revision of this file quoted.
+- F-Droid MR: [!49236](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/49236), branch `dev.susiee.lilptero` in the `SusieeTheLinuxUser/fdroiddata` fork, currently at commit `d1d7e706`.
+- **Three rounds of reviewer feedback from `linsui`, all resolved and pushed:**
+  1. Follow the Flutter template, add ABI split, add `versionCodeOverride` in Gradle — done, matches their suggested snippet exactly.
+  2. Add `binary:`/`AllowedAPKSigningKeys` for reproducible builds — done; all three ABI APKs rebuild byte-identical to the published ones.
+  3. Pin the Flutter version (was tracking `stable`) and fix a JNI patch path that was pinned to a literal package version (`jni-1.0.3`, breaks on bump) — done: Flutter version is now extracted live from `.github/workflows/release.yml` and checked out in the srclib; the JNI sed target is the version-agnostic glob `jni-*`.
+- Full F-Droid pipeline passed: `fdroid build`, `check apk`, `fdroid lint`, `fdroid rewritemeta` — https://gitlab.com/SusieeTheLinuxUser/fdroiddata/-/pipelines/2862036916
+- **`linsui`'s latest reply (2026-09-18, verbatim):** "This MR is mostly ready. We'll test it later. If everything works well we'll merge it. Meantime if you release a new version please update this MR. Currently we have lots of MRs waiting for test so it may take a long time. If you'd like to help you can test those MRs and posting the result."
 
 ## Next actions
 
-1. Review and commit `fdroid/dev.susiee.lilptero.yml` in the app worktree.
-2. Copy it to `~/development/fdroiddata/metadata/dev.susiee.lilptero.yml` and run `fdroid rewritemeta dev.susiee.lilptero` if required by fdroiddata formatting.
-3. Run the real buildserver/pipeline validation. Local `fdroid build` skips recipe `sudo:` commands, so the final fixed-path recipe cannot be fully exercised in ordinary local mode.
-4. Commit and push the fdroiddata branch, then reply to `linsui` with the ABI and reproducibility evidence.
-5. Do not create another release: the existing v0.1.2 APKs are reproducible.
+**There is nothing to do right now.** The MR is in F-Droid's queue awaiting their own testing pass — the ball is in their court — current labels are `New App`, `reproducible-builds`, `review-requested` (no `waiting-on-response`), pipeline `success`, `mergeable: true` (verified via the API 2026-09-19). Do not:
+- Open a replacement MR.
+- Cut a new release just to "check in" — only cut one if the app itself changes.
+- Re-ping `linsui` — they explicitly said it may take a long time due to queue volume.
+
+If a new app version ships (e.g. the background-notifications feature on `main`), update the *existing* MR: bump `fdroid/dev.susiee.lilptero.yml` (commit SHA, versionName, and re-verify reproducibility — a new release potentially changes `libapp.so`/`libdartjni.so` bytes), copy to `~/development/fdroiddata/metadata/dev.susiee.lilptero.yml`, run `fdroid rewritemeta dev.susiee.lilptero` if formatting drifts, commit, and push the same `dev.susiee.lilptero` branch. Note: a v0.1.3 with the background-notification feature is expected eventually, and it adds two Flutter plugins plus Android core-library desugaring — assume the reproducibility verification needs redoing from scratch when that happens, don't assume it still holds.
+
+If `linsui` (or anyone) leaves new review feedback: read it via the GitLab API (`https://gitlab.com/api/v4/projects/fdroid%2Ffdroiddata/merge_requests/49236/notes?sort=asc&per_page=50` — needs an authenticated session; unauthenticated `curl` gets 401, use a logged-in browser session or a GitLab token) rather than trusting the state described in an old copy of this file, then apply the change in `~/development/fdroiddata` (the working checkout, already on the right branch) and in the app repo's `fdroid/` copy, keeping both in sync per the header comment in `fdroid/dev.susiee.lilptero.yml`.
+
+## Known gotcha: commit SHA drift after history rewrite
+
+The app repo's git history was rewritten once to strip a personal email from commit metadata (2026-09-18), which changed every commit's SHA including the one `v0.1.2` pointed to. Any doc, comment, or old conversation summary written before that rewrite has a dead SHA. Always re-derive the live one with `git ls-remote --tags origin v0.1.2` rather than reusing a SHA quoted in prose — this file has been wrong about it twice already.
 
 ## Prompt for Claude
 
 ```text
-Read fdroid/AI_HANDOFF.md, then inspect the current diff in the claude/fdroid-abi-split-review worktree. Continue only the F-Droid MR !49236 reviewer-response task. Verify the recipe is synchronized with the handoff, preserve the three ABI versionCodes and reproducible-build fields, and report the exact remaining commands/actions. Do not cut a new release, change app code, push, or post to GitLab until I explicitly approve those external actions. Keep the response concise and evidence-based.
+Read fdroid/AI_HANDOFF.md, then verify the live MR state via the GitLab API (notes endpoint) rather than trusting this file's summary — it goes stale between sessions. Only act if there's new reviewer feedback to address or a new app version to sync into the MR. Do not cut a new release, open a replacement MR, or push to GitLab until you've confirmed the actual current state and, for anything public-facing, gotten explicit user approval.
 ```
