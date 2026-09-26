@@ -29,7 +29,14 @@ class PterodactylApiClient {
         'Content-Type': 'application/json',
       };
 
-  Future<dynamic> _get(String path) => _send(() => _client.get(_uri(path), headers: _headers));
+  Future<T> _get<T>(String path, T Function(Map<String, dynamic>) parse) async {
+    final json = await _send(() => _client.get(_uri(path), headers: _headers));
+    try {
+      return parse(json as Map<String, dynamic>);
+    } on TypeError {
+      throw ApiException('Invalid response from panel');
+    }
+  }
 
   Future<dynamic> _post(String path, [Map<String, dynamic>? body]) => _send(
         () => _client.post(_uri(path), headers: _headers, body: body == null ? null : jsonEncode(body)),
@@ -50,37 +57,33 @@ class PterodactylApiClient {
     if (response.statusCode == 403) {
       throw ApiException('You do not have permission for this action', statusCode: 403);
     }
-    if (response.statusCode >= 400) {
+    if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException('Request failed (${response.statusCode})', statusCode: response.statusCode);
     }
     if (response.body.isEmpty) return null;
-    return jsonDecode(response.body);
+    try {
+      return jsonDecode(response.body);
+    } on FormatException {
+      throw ApiException('Invalid response from panel');
+    }
   }
 
-  Future<List<PteroServer>> listServers() async {
-    final json = await _get('/api/client') as Map<String, dynamic>;
-    final data = (json['data'] as List).cast<Map<String, dynamic>>();
-    return data.map(PteroServer.fromJson).toList();
-  }
+  Future<List<PteroServer>> listServers() => _get('/api/client', (json) {
+        final data = (json['data'] as List).cast<Map<String, dynamic>>();
+        return data.map(PteroServer.fromJson).toList();
+      });
 
-  Future<PteroServer> getServer(String identifier) async {
-    final json = await _get('/api/client/servers/$identifier') as Map<String, dynamic>;
-    return PteroServer.fromJson(json);
-  }
+  Future<PteroServer> getServer(String identifier) => _get('/api/client/servers/$identifier', PteroServer.fromJson);
 
-  Future<ServerResources> getResources(String identifier) async {
-    final json = await _get('/api/client/servers/$identifier/resources') as Map<String, dynamic>;
-    return ServerResources.fromJson(json);
-  }
+  Future<ServerResources> getResources(String identifier) =>
+      _get('/api/client/servers/$identifier/resources', ServerResources.fromJson);
 
   Future<void> sendPower(String identifier, String signal) async {
     await _post('/api/client/servers/$identifier/power', {'signal': signal});
   }
 
-  Future<WebsocketDetails> getWebsocketDetails(String identifier) async {
-    final json = await _get('/api/client/servers/$identifier/websocket') as Map<String, dynamic>;
-    return WebsocketDetails.fromJson(json);
-  }
+  Future<WebsocketDetails> getWebsocketDetails(String identifier) =>
+      _get('/api/client/servers/$identifier/websocket', WebsocketDetails.fromJson);
 
   void close() => _client.close();
 }

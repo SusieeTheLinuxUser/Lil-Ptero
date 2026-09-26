@@ -53,7 +53,7 @@ class _SetupScreenState extends State<SetupScreen> {
         MaterialPageRoute(builder: (_) => ServerListScreen(credentials: credentials)),
       );
     } on ApiException catch (e) {
-      setState(() => _error = e.message);
+      if (mounted) setState(() => _error = e.message);
     } finally {
       client.close();
       if (mounted) setState(() => _loading = false);
