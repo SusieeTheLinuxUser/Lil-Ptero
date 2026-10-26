@@ -60,14 +60,14 @@ class BackgroundMonitor {
     importance: Importance.high,
   );
 
-  static Future<void> configure() async {
+  static Future<void> configure({bool autoStartOnBoot = false}) async {
     final service = FlutterBackgroundService();
     await service.configure(
       androidConfiguration: AndroidConfiguration(
         onStart: backgroundServiceEntrypoint,
         isForegroundMode: true,
         autoStart: false,
-        autoStartOnBoot: false,
+        autoStartOnBoot: autoStartOnBoot,
         // No custom notificationChannelId: the plugin requires that channel to
         // already exist before configure() runs if you supply one — leaving
         // it unset lets it create and use its own default channel instead.
