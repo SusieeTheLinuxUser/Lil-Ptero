@@ -26,13 +26,14 @@ class NotificationPrefs {
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
         ?.requestNotificationsPermission();
 
-    await BackgroundMonitor.configure();
+    await BackgroundMonitor.configure(autoStartOnBoot: enabled.value);
     if (enabled.value) await BackgroundMonitor.start();
   }
 
   static Future<void> setEnabled(bool value) async {
     enabled.value = value;
     await _storage.write(key: _enabledKey, value: value.toString());
+    await BackgroundMonitor.configure(autoStartOnBoot: value);
     if (value) {
       await BackgroundMonitor.start();
     } else {
