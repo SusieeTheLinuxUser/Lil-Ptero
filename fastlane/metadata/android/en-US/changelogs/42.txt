@@ -1,0 +1,4 @@
+- New: optional background notifications when a server goes offline
+- The background monitor now keeps running after a phone reboot
+- Fixed API error handling and console connection races
+- No more debug banner in the corner

@@ -22,6 +22,7 @@ class PterodactylMobileApp extends StatelessWidget {
       valueListenable: ThemePrefs.accent,
       builder: (context, accent, _) {
         return MaterialApp(
+          debugShowCheckedModeBanner: false,
           title: 'Pterodactyl Mobile',
           theme: ThemeData(
             colorSchemeSeed: accent.seed,
