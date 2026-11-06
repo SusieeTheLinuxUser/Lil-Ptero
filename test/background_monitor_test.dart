@@ -18,4 +18,16 @@ void main() {
   test('does not notify on the first poll with no prior state', () {
     expect(shouldNotifyOffline(null, ServerState.offline), isFalse);
   });
+
+  test('a failed poll keeps the previous state', () {
+    final currentStates = <String, String>{};
+    carryForwardPreviousState(currentStates, {'a': 'running'}, 'a');
+    expect(currentStates['a'], 'running');
+  });
+
+  test('a failed poll with no previous state stays absent', () {
+    final currentStates = <String, String>{};
+    carryForwardPreviousState(currentStates, <String, String>{}, 'a');
+    expect(currentStates, isEmpty);
+  });
 }

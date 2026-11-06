@@ -71,6 +71,8 @@ class _ConsoleTabState extends State<ConsoleTab> {
     } catch (_) {
       await _subscription?.cancel();
       await socket.dispose();
+      _subscription = null;
+      _socket = null;
       if (!mounted) return;
       setState(() {
         _connecting = false;
