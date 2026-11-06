@@ -33,7 +33,11 @@ class _ServerListScreenState extends State<ServerListScreen> {
 
   Future<void> _refresh() async {
     setState(() => _future = _client.listServers());
-    await _future;
+    try {
+      await _future;
+    } catch (_) {
+      // FutureBuilder already renders the error; don't rethrow into onRefresh.
+    }
   }
 
   @override

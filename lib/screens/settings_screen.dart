@@ -17,6 +17,9 @@ class SettingsScreen extends StatelessWidget {
   }
 
   Future<void> _disconnect(BuildContext context) async {
+    // Stop the background watcher first so it doesn't keep running (and
+    // look alive) with no credentials left to poll with.
+    await NotificationPrefs.setEnabled(false);
     await Credentials.clear();
     if (!context.mounted) return;
     Navigator.of(context).pushAndRemoveUntil(

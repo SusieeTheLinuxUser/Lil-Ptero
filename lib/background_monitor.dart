@@ -17,6 +17,15 @@ bool shouldNotifyOffline(String? previous, ServerState current) {
   return previous != null && previous != current.name && current == ServerState.offline;
 }
 
+/// Carries a failed server's previous state into the current poll, so a
+/// transient error doesn't erase the baseline the next tick compares
+/// against. Servers with no previous state stay absent.
+void carryForwardPreviousState(
+    Map<String, String> currentStates, Map<String, String> lastStates, String identifier) {
+  final previous = lastStates[identifier];
+  if (previous != null) currentStates[identifier] = previous;
+}
+
 /// Entry point for the background service isolate. Must be a public
 /// top-level function: the plugin resolves it by callback handle from a
 /// separate isolate, and silently does nothing if it can't be resolved.
@@ -28,18 +37,25 @@ void backgroundServiceEntrypoint(ServiceInstance service) {
   );
   service.on('stopService').listen((_) => service.stopSelf());
 
+  var busy = false;
   Timer.periodic(BackgroundMonitor._pollInterval, (_) async {
-    final now = DateTime.now();
-    final clock = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
-    String status;
+    if (busy) return; // skip the tick while the previous one is still running
+    busy = true;
     try {
-      await BackgroundMonitor._pollOnce(notifications);
-      status = 'Last checked $clock';
-    } catch (_) {
-      status = 'Check failed at $clock';
-    }
-    if (service is AndroidServiceInstance) {
-      await service.setForegroundNotificationInfo(title: 'Pterodactyl Mobile', content: status);
+      final now = DateTime.now();
+      final clock = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+      String status;
+      try {
+        await BackgroundMonitor._pollOnce(notifications);
+        status = 'Last checked $clock';
+      } catch (_) {
+        status = 'Check failed at $clock';
+      }
+      if (service is AndroidServiceInstance) {
+        await service.setForegroundNotificationInfo(title: 'Pterodactyl Mobile', content: status);
+      }
+    } finally {
+      busy = false;
     }
   });
 }
@@ -106,6 +122,7 @@ class BackgroundMonitor {
         try {
           state = (await api.getResources(server.identifier)).currentState;
         } catch (_) {
+          carryForwardPreviousState(currentStates, lastStates, server.identifier);
           continue;
         }
         currentStates[server.identifier] = state.name;
