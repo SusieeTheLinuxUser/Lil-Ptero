@@ -143,7 +143,7 @@ class BackgroundMonitor {
 
         if (shouldNotifyOffline(lastStates[server.identifier], state)) {
           await notifications.show(
-            server.name.hashCode,
+            server.identifier.hashCode,
             server.name,
             'Server stopped',
             const NotificationDetails(android: _channel),

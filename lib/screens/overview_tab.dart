@@ -23,6 +23,7 @@ class _OverviewTabState extends State<OverviewTab> {
   ServerResources? _resources;
   String? _error;
   bool _busy = false;
+  bool _polling = false;
 
   @override
   void initState() {
@@ -40,6 +41,8 @@ class _OverviewTabState extends State<OverviewTab> {
   }
 
   Future<void> _poll() async {
+    if (_polling) return; // don't let a slow old response overwrite newer gauges
+    _polling = true;
     try {
       final resources = await _api.getResources(widget.server.identifier);
       if (mounted) {
@@ -50,6 +53,8 @@ class _OverviewTabState extends State<OverviewTab> {
       }
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
+    } finally {
+      _polling = false;
     }
   }
 
@@ -99,8 +104,9 @@ class _OverviewTabState extends State<OverviewTab> {
           const SizedBox(height: 16),
           ResourceGauge(
             label: 'CPU',
-            value: resources.cpuAbsolute / 100,
-            valueLabel: '${resources.cpuAbsolute.toStringAsFixed(1)}%',
+            value: resources.cpuAbsolute / (widget.server.cpuLimitPercent > 0 ? widget.server.cpuLimitPercent : 100),
+            valueLabel: '${resources.cpuAbsolute.toStringAsFixed(1)}%'
+                '${widget.server.cpuLimitPercent > 0 ? ' / ${widget.server.cpuLimitPercent}%' : ''}',
           ),
           ResourceGauge(
             label: 'Memory',

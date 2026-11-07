@@ -9,9 +9,12 @@ import 'update_prefs.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await ThemePrefs.load();
-  await NotificationPrefs.load();
-  await UpdatePrefs.load();
+  await ThemePrefs.load().catchError((Object _) {});
+  await NotificationPrefs.load().catchError((Object _) {});
+  // Unknown opt-out: don't phone home.
+  await UpdatePrefs.load().catchError((Object _) {
+    UpdatePrefs.enabled.value = false;
+  });
   runApp(const PterodactylMobileApp());
   // Fire-and-forget: silent on any failure, gated to once per 24h inside.
   UpdatePrefs.maybeCheckAndNotify().catchError((Object _) {});

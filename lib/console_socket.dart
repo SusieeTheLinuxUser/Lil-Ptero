@@ -82,6 +82,8 @@ class ConsoleSocket {
       return;
     }
     _socket = socket;
+    // Pings detect half-open connections (Wi-Fi to mobile handoff) so onDone fires.
+    socket.pingInterval = const Duration(seconds: 30);
     _subscription = socket.listen(_handleRaw, onDone: _handleClosed, onError: (_) => _handleClosed());
     _sendAuth(details.token);
   }
