@@ -33,6 +33,20 @@ void main() {
     expect(jsonDecode(requests.last.body), {'signal': 'start'});
   });
 
+  test('never sends the API key to a plain http panel', () async {
+    var sent = false;
+    final api = PterodactylApiClient(
+      const Credentials(panelUrl: 'http://panel.example.com', apiKey: 'test-only'),
+      client: MockClient((_) async {
+        sent = true;
+        return http.Response('{"data":[]}', 200);
+      }),
+    );
+    addTearDown(api.close);
+    await expectLater(api.listServers(), throwsA(isA<ApiException>()));
+    expect(sent, isFalse);
+  });
+
   for (final status in [302, 401, 403, 500]) {
     test('HTTP $status becomes an ApiException before parsing the body', () async {
       await expectLater(

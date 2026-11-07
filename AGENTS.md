@@ -115,7 +115,7 @@ Known local gotcha: if your default JDK is very new (e.g. 21+), the Android Grad
 ### Bug hunt notes (2026-11-07)
 
 - `main()` must reach `runApp` even if a prefs `load()` throws; each is wrapped in `.catchError`. Known open issue: `allowBackup` is on (Android default), and flutter_secure_storage data restored from a backup can't be decrypted (`InvalidKeyException`). Fixing it means choosing `allowBackup="false"` plus data-extraction rules, or `AndroidOptions(resetOnError: true)` (wipes saved data). That choice is the maintainer's.
-- Plain `http://` panels are already refused on Android: the Flutter engine passes the network security policy to `dart:io`, which throws "Non-https connection ... is not supported by the platform". Don't "fix" this again in Dart.
+- Android's cleartext block does NOT reach `dart:io`: Flutter's Android embedder never sets `--disallow-insecure-connections`, so plain `http://` works and would send the bearer key unencrypted. `api_client.dart` `_send` therefore refuses any non-https panel URL (covers setup and saved URLs). Keep that check.
 - The console socket sets `pingInterval` so a half-open connection closes and shows Reconnect.
 
 ## The Pterodactyl Client API (what this app talks to)
@@ -136,7 +136,7 @@ Not yet implemented (intentionally out of v1 scope, see roadmap below): file man
 
 - Never hardcode a panel URL, API key, or any other credential in source, tests, or comments — the whole point of this app is that credentials are user-supplied at runtime and stored only in `flutter_secure_storage` (Android Keystore-backed).
 - Don't `print`/`debugPrint` credentials, tokens, or full request/response bodies that might contain them.
-- Don't add cleartext (HTTP) support or a custom network security config that weakens the OS default — Android already blocks plaintext traffic by default on this app's target SDK, which is correct given the app sends a bearer credential on every request.
+- Don't add cleartext (HTTP) support or a custom network security config that weakens the OS default — Android's cleartext default does not cover `dart:io`, so `api_client.dart` refuses non-https panel URLs itself; the app sends a bearer credential on every request.
 - If you touch `credentials.dart` or `api_client.dart`, double-check nothing new gets logged or serialized somewhere it shouldn't.
 
 ## Releases & distribution

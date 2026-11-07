@@ -43,6 +43,10 @@ class PterodactylApiClient {
       );
 
   Future<dynamic> _send(Future<http.Response> Function() request) async {
+    // Flutter on Android doesn't block plain http, so never send the API key over it.
+    if (Uri.tryParse(credentials.panelUrl)?.isScheme('https') != true) {
+      throw ApiException('Panel URL must start with https://');
+    }
     final http.Response response;
     try {
       response = await request().timeout(const Duration(seconds: 15));

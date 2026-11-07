@@ -105,7 +105,8 @@ class _OverviewTabState extends State<OverviewTab> {
           ResourceGauge(
             label: 'CPU',
             value: resources.cpuAbsolute / (widget.server.cpuLimitPercent > 0 ? widget.server.cpuLimitPercent : 100),
-            valueLabel: '${resources.cpuAbsolute.toStringAsFixed(1)}%',
+            valueLabel: '${resources.cpuAbsolute.toStringAsFixed(1)}%'
+                '${widget.server.cpuLimitPercent > 0 ? ' / ${widget.server.cpuLimitPercent}%' : ''}',
           ),
           ResourceGauge(
             label: 'Memory',
