@@ -2,6 +2,7 @@ package dev.susiee.lilptero
 
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
 import io.flutter.embedding.android.FlutterActivity
@@ -33,5 +34,20 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+        // Which app installed us, so an F-Droid install asks F-Droid for updates and
+        // never GitHub. Runtime, not a build flag: both channels ship the same APK.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "dev.susiee.lilptero/install_info")
+            .setMethodCallHandler { call, result ->
+                if (call.method != "installer") return@setMethodCallHandler result.notImplemented()
+                val installer = runCatching {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        packageManager.getInstallSourceInfo(packageName).installingPackageName
+                    } else {
+                        @Suppress("DEPRECATION")
+                        packageManager.getInstallerPackageName(packageName)
+                    }
+                }.getOrNull()
+                result.success(installer)
+            }
     }
 }

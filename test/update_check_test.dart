@@ -94,11 +94,13 @@ void main() {
       );
       expect(version, '0.1.4');
     });
-    test('same build number -> null (up to date)', () async {
+    test('same version under its ABI-scaled code -> null (up to date)', () async {
+      // Split APKs carry build * 10 + ABI digit (e.g. 43), far above the plain build
+      // number; that must not read as "newer".
       final version = await fetchNewerVersionName(
         fdroid: true,
         fdroidClient: MockClient((_) async => http.Response(
-              '{"suggestedVersionCode":$appBuildNumber,"packages":[{"versionName":"$appVersion","versionCode":$appBuildNumber}]}',
+              '{"suggestedVersionCode":43,"packages":[{"versionName":"$appVersion","versionCode":43}]}',
               200,
             )),
       );
@@ -125,6 +127,5 @@ void main() {
     final match = RegExp(r'^version:\s*(.+)\+(\d+)\s*$', multiLine: true).firstMatch(pubspec);
     expect(match, isNotNull, reason: 'version: line not found in pubspec.yaml');
     expect(match!.group(1), appVersion, reason: 'appVersion drifted from pubspec.yaml');
-    expect(match.group(2), '$appBuildNumber', reason: 'appBuildNumber drifted from pubspec.yaml');
   });
 }

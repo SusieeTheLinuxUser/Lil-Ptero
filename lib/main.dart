@@ -14,7 +14,7 @@ void main() async {
   await UpdatePrefs.load();
   runApp(const PterodactylMobileApp());
   // Fire-and-forget: silent on any failure, gated to once per 24h inside.
-  UpdatePrefs.maybeCheckAndNotify();
+  UpdatePrefs.maybeCheckAndNotify().catchError((Object _) {});
 }
 
 class PterodactylMobileApp extends StatelessWidget {

@@ -3,17 +3,21 @@ import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
-/// Set with --dart-define=FDROID=true in the F-Droid build (see
-/// fdroid/dev.susiee.lilptero.yml). F-Droid policy forbids its builds
-/// contacting GitHub (and their APKs are signed differently, so a GitHub
-/// APK couldn't install over one anyway) — so the update check asks
-/// F-Droid's API instead.
-const bool fdroidBuild = bool.fromEnvironment('FDROID');
+/// F-Droid clients, by package name, as Android reports the installer. An
+/// install from one of them asks F-Droid for updates, never GitHub. Decided
+/// at runtime, not with a build flag: F-Droid verifies its build is the same
+/// APK as the GitHub release (reproducible build, AllowedAPKSigningKeys in
+/// fdroid/dev.susiee.lilptero.yml), so both channels must be one binary.
+const fdroidClients = {
+  'org.fdroid.fdroid',
+  'org.fdroid.basic',
+  'com.looker.droidify',
+  'com.machiav3lli.fdroid', // Neo Store
+};
 
 /// Keep in sync with `version:` in pubspec.yaml (X.Y.Z+buildNumber);
 /// test/update_check_test.dart fails the build if they drift.
 const String appVersion = '0.1.3';
-const int appBuildNumber = 4;
 
 const _fdroidApiUrl = 'https://f-droid.org/api/v1/packages/dev.susiee.lilptero';
 const githubLatestUrl = 'https://github.com/SusieeTheLinuxUser/Lil-Ptero/releases/latest';
@@ -96,7 +100,7 @@ String? fdroidLatestVersionName(String body) {
 /// Newest published version name ("X.Y.Z") if it's newer than this build,
 /// else null. Silent on any network error or timeout — a failed check
 /// must never nag or crash the app. [fdroidClient] is injectable for tests.
-Future<String?> fetchNewerVersionName({bool fdroid = fdroidBuild, http.Client? fdroidClient}) async {
+Future<String?> fetchNewerVersionName({required bool fdroid, http.Client? fdroidClient}) async {
   try {
     return fdroid ? await _fetchFdroid(fdroidClient) : await _fetchGithub();
   } catch (_) {
@@ -110,8 +114,10 @@ Future<String?> _fetchFdroid(http.Client? client) async {
     final response = await effective.get(Uri.parse(_fdroidApiUrl)).timeout(updateCheckTimeout);
     if (response.statusCode == 404) return null; // not listed on F-Droid yet
     if (response.statusCode != 200) return null;
-    if ((fdroidSuggestedVersionCode(response.body) ?? 0) <= appBuildNumber) return null;
-    return fdroidLatestVersionName(response.body);
+    // Names, not version codes: each ABI's APK has its own code (build * 10 + ABI
+    // digit), so the suggested code is no measure of "newer" for this phone.
+    final name = fdroidLatestVersionName(response.body);
+    return name != null && isNewerVersion(name, appVersion) ? name : null;
   } finally {
     if (client == null) effective.close();
   }

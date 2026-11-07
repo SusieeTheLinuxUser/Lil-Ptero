@@ -36,7 +36,7 @@ lib/
   format.dart                 — formatBytes, formatUptime
   theme_prefs.dart            — dark-only theme, selectable accent color presets (persisted via flutter_secure_storage)
   notification_prefs.dart     — opt-in toggle for background monitoring; starts/stops the service, requests POST_NOTIFICATIONS
-  update_check.dart           — update check: F-Droid API (FDROID builds, never GitHub) or GitHub's /releases/latest 302; pure version parsing/comparison
+  update_check.dart           — update check: F-Droid API (installed by an F-Droid client, never GitHub) or GitHub's /releases/latest 302; pure version parsing/comparison
   update_prefs.dart           — "Check for updates" toggle + once-per-24h start check + update banner
   background_monitor.dart     — foreground-service isolate that polls server status and fires stop/crash notifications
   battery_optimization.dart   — platform channel to MainActivity.kt for Android's battery-exemption prompt
