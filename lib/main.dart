@@ -53,11 +53,26 @@ class _StartupGate extends StatefulWidget {
 
 class _StartupGateState extends State<_StartupGate> {
   late final Future<Credentials?> _future;
+  bool _loadFailed = false;
+
+  Future<Credentials?> _loadCredentials() async {
+    try {
+      // Retry once so a one-off glitch doesn't wipe a readable login; a
+      // restored backup fails every time.
+      return await Credentials.load().catchError((Object _) => Credentials.load());
+    } catch (_) {
+      _loadFailed = true;
+      try {
+        await Credentials.reset();
+      } catch (_) {}
+      return null;
+    }
+  }
 
   @override
   void initState() {
     super.initState();
-    _future = Credentials.load();
+    _future = _loadCredentials();
   }
 
   @override
@@ -69,7 +84,14 @@ class _StartupGateState extends State<_StartupGate> {
           return const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
         final credentials = snapshot.data;
-        return credentials == null ? const SetupScreen() : ServerListScreen(credentials: credentials);
+        return credentials == null
+            ? SetupScreen(
+                notice:
+                    _loadFailed
+                        ? "Your saved login couldn't be read (this can happen after restoring a backup). Please connect again."
+                        : null,
+              )
+            : ServerListScreen(credentials: credentials);
       },
     );
   }

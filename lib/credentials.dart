@@ -22,6 +22,10 @@ class Credentials {
     await _storage.write(key: _apiKeyKey, value: credentials.apiKey);
   }
 
+  /// Wipes every saved value; used when saved data can't be decrypted
+  /// (e.g. after a backup restore).
+  static Future<void> reset() => _storage.deleteAll();
+
   static Future<void> clear() async {
     await _storage.delete(key: _panelUrlKey);
     await _storage.delete(key: _apiKeyKey);

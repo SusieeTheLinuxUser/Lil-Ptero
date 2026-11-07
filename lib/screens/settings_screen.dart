@@ -23,7 +23,19 @@ class SettingsScreen extends StatelessWidget {
     try {
       await NotificationPrefs.setEnabled(false);
     } catch (_) {} // disconnecting must still happen even if this fails
-    await Credentials.clear();
+    try {
+      await Credentials.clear();
+    } catch (_) {
+      try {
+        await Credentials.reset();
+      } catch (_) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Couldn't remove your saved login. Please try again.")),
+        );
+        return;
+      }
+    }
     if (!context.mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const SetupScreen()),
