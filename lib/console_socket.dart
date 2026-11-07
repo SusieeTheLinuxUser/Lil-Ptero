@@ -118,6 +118,8 @@ class ConsoleSocket {
     }
     final previousState = state;
     _stateMachine.onEvent(event);
+    // Answered: a timer left running could close the socket later, mid token refresh.
+    if (event is AuthSuccess) _authTimer?.cancel();
     _controller.add(event);
     if (event is TokenExpiring && previousState == ConsoleConnectionState.authenticated) {
       unawaited(_refreshToken());

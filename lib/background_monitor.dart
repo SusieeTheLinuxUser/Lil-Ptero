@@ -38,19 +38,23 @@ void backgroundServiceEntrypoint(ServiceInstance service) {
   service.on('stopService').listen((_) => service.stopSelf());
   // Alert only on stops this run sees happen. States saved before a gap (monitor
   // off, logged out, phone off) would make the first poll report a stop that
-  // happened while nothing was watching.
-  final freshBaseline = BackgroundMonitor._storage.delete(key: BackgroundMonitor._lastStatesKey);
+  // happened while nothing was watching. Cleared inside the poll's error handling,
+  // so a failed clear shows "Check failed" and is retried, never skipped.
+  var baselineCleared = false;
 
   var busy = false;
-  Timer.periodic(BackgroundMonitor._pollInterval, (_) async {
+  Future<void> tick() async {
     if (busy) return; // skip the tick while the previous one is still running
     busy = true;
     try {
-      await freshBaseline;
       final now = DateTime.now();
       final clock = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
       String status;
       try {
+        if (!baselineCleared) {
+          await BackgroundMonitor._storage.delete(key: BackgroundMonitor._lastStatesKey);
+          baselineCleared = true;
+        }
         await BackgroundMonitor._pollOnce(notifications);
         status = 'Last checked $clock';
       } catch (_) {
@@ -62,7 +66,12 @@ void backgroundServiceEntrypoint(ServiceInstance service) {
     } finally {
       busy = false;
     }
-  });
+  }
+
+  // Poll once now, so the baseline exists before the first 30 s tick: a stop in that
+  // window would otherwise have nothing to compare against.
+  unawaited(tick());
+  Timer.periodic(BackgroundMonitor._pollInterval, (_) => tick());
 }
 
 /// Polls every server's status on a timer from an Android foreground
