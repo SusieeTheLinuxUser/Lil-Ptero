@@ -97,7 +97,7 @@ Builds:
       - pushd $repo
       - mv .pub-cache /home/runner/.pub-cache
       - export PUB_CACHE=/home/runner/.pub-cache
-      - $$flutter$$/bin/flutter build apk --release --split-per-abi --target-platform="android-arm"
+      - $$flutter$$/bin/flutter build apk --release --split-per-abi --target-platform="android-arm" --dart-define=FDROID=true
       - mv /home/runner/.pub-cache .pub-cache
       - popd
       - mv $repo dev.susiee.lilptero
@@ -138,7 +138,7 @@ Builds:
       - pushd $repo
       - mv .pub-cache /home/runner/.pub-cache
       - export PUB_CACHE=/home/runner/.pub-cache
-      - $$flutter$$/bin/flutter build apk --release --split-per-abi --target-platform="android-arm64"
+      - $$flutter$$/bin/flutter build apk --release --split-per-abi --target-platform="android-arm64" --dart-define=FDROID=true
       - mv /home/runner/.pub-cache .pub-cache
       - popd
       - mv $repo dev.susiee.lilptero
@@ -179,7 +179,7 @@ Builds:
       - pushd $repo
       - mv .pub-cache /home/runner/.pub-cache
       - export PUB_CACHE=/home/runner/.pub-cache
-      - $$flutter$$/bin/flutter build apk --release --split-per-abi --target-platform="android-x64"
+      - $$flutter$$/bin/flutter build apk --release --split-per-abi --target-platform="android-x64" --dart-define=FDROID=true
       - mv /home/runner/.pub-cache .pub-cache
       - popd
       - mv $repo dev.susiee.lilptero
