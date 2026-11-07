@@ -36,12 +36,17 @@ void backgroundServiceEntrypoint(ServiceInstance service) {
     const InitializationSettings(android: AndroidInitializationSettings('@mipmap/ic_launcher')),
   );
   service.on('stopService').listen((_) => service.stopSelf());
+  // Alert only on stops this run sees happen. States saved before a gap (monitor
+  // off, logged out, phone off) would make the first poll report a stop that
+  // happened while nothing was watching.
+  final freshBaseline = BackgroundMonitor._storage.delete(key: BackgroundMonitor._lastStatesKey);
 
   var busy = false;
   Timer.periodic(BackgroundMonitor._pollInterval, (_) async {
     if (busy) return; // skip the tick while the previous one is still running
     busy = true;
     try {
+      await freshBaseline;
       final now = DateTime.now();
       final clock = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
       String status;

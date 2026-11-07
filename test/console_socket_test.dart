@@ -72,6 +72,23 @@ void main() {
     return (peer, frames);
   }
 
+  test('an auth that is never answered closes the socket instead of spinning forever', () async {
+    final quick = ConsoleSocket(console.apiClient, 'abc', timeout: const Duration(milliseconds: 200));
+    addTearDown(quick.dispose);
+    final closed = quick.events.firstWhere((event) => event is SocketClosed);
+    await quick.connect();
+    await peerFuture; // the panel accepts the socket, then never answers auth
+    await closed.timeout(const Duration(seconds: 5));
+    expect(quick.state, ConsoleConnectionState.disconnected);
+  });
+
+  test('a handshake that stalls fails the connect', () async {
+    allowHandshake = Completer<void>(); // never completed: the upgrade hangs
+    final quick = ConsoleSocket(console.apiClient, 'abc', timeout: const Duration(milliseconds: 200));
+    addTearDown(quick.dispose);
+    await expectLater(quick.connect(), throwsA(isA<TimeoutException>()));
+  });
+
   test('failed token refresh disconnects once without an unhandled error', () async {
     final (peer, _) = await authenticate();
     final events = <ConsoleEvent>[];
