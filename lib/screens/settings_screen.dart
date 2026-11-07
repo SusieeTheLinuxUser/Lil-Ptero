@@ -4,6 +4,7 @@ import '../battery_optimization.dart';
 import '../credentials.dart';
 import '../notification_prefs.dart';
 import '../theme_prefs.dart';
+import '../update_prefs.dart';
 import 'setup_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -87,6 +88,16 @@ class SettingsScreen extends StatelessWidget {
                 ],
               );
             },
+          ),
+          const Divider(),
+          ValueListenableBuilder<bool>(
+            valueListenable: UpdatePrefs.enabled,
+            builder: (context, enabled, _) => SwitchListTile(
+              title: const Text('Check for updates'),
+              subtitle: const Text('Once a day on start, shows a banner when a newer version is out'),
+              value: enabled,
+              onChanged: UpdatePrefs.setEnabled,
+            ),
           ),
           const Divider(),
           ListTile(

@@ -5,12 +5,16 @@ import 'notification_prefs.dart';
 import 'screens/server_list_screen.dart';
 import 'screens/setup_screen.dart';
 import 'theme_prefs.dart';
+import 'update_prefs.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await ThemePrefs.load();
   await NotificationPrefs.load();
+  await UpdatePrefs.load();
   runApp(const PterodactylMobileApp());
+  // Fire-and-forget: silent on any failure, gated to once per 24h inside.
+  UpdatePrefs.maybeCheckAndNotify().catchError((Object _) {});
 }
 
 class PterodactylMobileApp extends StatelessWidget {
@@ -29,6 +33,7 @@ class PterodactylMobileApp extends StatelessWidget {
             brightness: Brightness.dark,
             useMaterial3: true,
           ),
+          scaffoldMessengerKey: updateScaffoldMessengerKey,
           home: const _StartupGate(),
         );
       },
