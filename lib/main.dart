@@ -57,7 +57,9 @@ class _StartupGateState extends State<_StartupGate> {
 
   Future<Credentials?> _loadCredentials() async {
     try {
-      return await Credentials.load();
+      // Retry once so a one-off glitch doesn't wipe a readable login; a
+      // restored backup fails every time.
+      return await Credentials.load().catchError((Object _) => Credentials.load());
     } catch (_) {
       _loadFailed = true;
       try {

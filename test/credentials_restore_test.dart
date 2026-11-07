@@ -38,6 +38,7 @@ void main() {
 
     expect(find.textContaining("couldn't be read"), findsOneWidget);
     expect(find.text('Connect'), findsOneWidget);
+    expect(calls.where((m) => m == 'read').length, greaterThanOrEqualTo(2)); // retried before wiping
     expect(calls, contains('deleteAll'));
   });
 
