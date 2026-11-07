@@ -6,7 +6,8 @@ import '../format.dart';
 import 'server_list_screen.dart';
 
 class SetupScreen extends StatefulWidget {
-  const SetupScreen({super.key});
+  const SetupScreen({super.key, this.notice});
+  final String? notice;
 
   @override
   State<SetupScreen> createState() => _SetupScreenState();
@@ -54,6 +55,10 @@ class _SetupScreenState extends State<SetupScreen> {
       );
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _error = "Couldn't save your login on this phone. Please try again.");
+      }
     } finally {
       client.close();
       if (mounted) setState(() => _loading = false);
@@ -71,6 +76,14 @@ class _SetupScreenState extends State<SetupScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (widget.notice != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Text(
+                    widget.notice!,
+                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  ),
+                ),
               const Text('Enter your panel URL and a Client API key from your Pterodactyl account settings.'),
               const SizedBox(height: 16),
               TextFormField(
