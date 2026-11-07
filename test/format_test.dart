@@ -30,6 +30,9 @@ void main() {
     test('strips a trailing slash', () {
       expect(normalizePanelUrl('panel.example.com/'), 'https://panel.example.com');
     });
+    test('strips all trailing slashes', () {
+      expect(normalizePanelUrl('panel.example.com//'), 'https://panel.example.com');
+    });
     test('trims surrounding whitespace', () {
       expect(normalizePanelUrl('  panel.example.com  '), 'https://panel.example.com');
     });

@@ -2,7 +2,7 @@
 String normalizePanelUrl(String raw) {
   var url = raw.trim();
   if (!url.contains('://')) url = 'https://$url';
-  if (url.endsWith('/')) url = url.substring(0, url.length - 1);
+  url = url.replaceFirst(RegExp(r'/+$'), '');
   return url;
 }
 

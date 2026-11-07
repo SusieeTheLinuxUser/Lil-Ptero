@@ -112,6 +112,12 @@ Known local gotcha: if your default JDK is very new (e.g. 21+), the Android Grad
 - Validated locally: `flutter test --no-pub` (49 tests), `flutter analyze --no-pub`, `flutter build apk --debug --no-pub`, and `git diff --check` passed. No dependencies or release/F-Droid configuration were changed by this work.
 - Still requires real Android verification: live panel authentication/token renewal, network loss and manual reconnect, and navigation/backgrounding during connection setup. A debug APK build and loopback tests do not establish device behavior.
 
+### Bug hunt notes (2026-11-07)
+
+- `main()` must reach `runApp` even if a prefs `load()` throws; each is wrapped in `.catchError`. Known open issue: `allowBackup` is on (Android default), and flutter_secure_storage data restored from a backup can't be decrypted (`InvalidKeyException`). Fixing it means choosing `allowBackup="false"` plus data-extraction rules, or `AndroidOptions(resetOnError: true)` (wipes saved data). That choice is the maintainer's.
+- Plain `http://` panels are already refused on Android: the Flutter engine passes the network security policy to `dart:io`, which throws "Non-https connection ... is not supported by the platform". Don't "fix" this again in Dart.
+- The console socket sets `pingInterval` so a half-open connection closes and shows Reconnect.
+
 ## The Pterodactyl Client API (what this app talks to)
 
 Base path: `{panel_url}/api/client`, header `Authorization: Bearer {api_key}`, `Accept: application/json`. The user supplies their own panel URL + a personal **Client** API key (not an Application/admin key) — see [lib/api_client.dart](lib/api_client.dart) for everything currently implemented:
