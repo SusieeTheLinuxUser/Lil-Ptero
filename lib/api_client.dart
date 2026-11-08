@@ -72,10 +72,23 @@ class PterodactylApiClient {
     }
   }
 
-  Future<List<PteroServer>> listServers() => _get('/api/client', (json) {
+  /// Upper bound on server-list pages (50 servers each by default), so a
+  /// panel that never reports a last page can't loop forever.
+  static const maxServerPages = 50;
+
+  Future<List<PteroServer>> listServers() async {
+    final servers = <PteroServer>[];
+    for (var page = 1; page <= maxServerPages; page++) {
+      final totalPages = await _get('/api/client?page=$page', (json) {
         final data = (json['data'] as List).cast<Map<String, dynamic>>();
-        return data.map(PteroServer.fromJson).toList();
+        servers.addAll(data.map(PteroServer.fromJson));
+        final pagination = (json['meta'] as Map?)?['pagination'] as Map?;
+        return (pagination?['total_pages'] as num?)?.toInt() ?? 1;
       });
+      if (page >= totalPages) break;
+    }
+    return servers;
+  }
 
   Future<PteroServer> getServer(String identifier) => _get('/api/client/servers/$identifier', PteroServer.fromJson);
 

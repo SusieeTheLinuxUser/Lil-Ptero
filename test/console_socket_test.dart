@@ -14,6 +14,7 @@ void main() {
   late HttpServer server;
   late ConsoleSocket console;
   late Future<WebSocket> peerFuture;
+  late StreamController<WebSocket> upgraded; // every accepted socket, in order
   late Completer<http.Response> refresh;
   late int requests;
   late int connections;
@@ -23,17 +24,17 @@ void main() {
 
   setUp(() async {
     server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-    final peer = Completer<WebSocket>();
+    upgraded = StreamController<WebSocket>.broadcast();
     connections = 0;
     handshakeStarted = Completer<void>();
     allowHandshake = null;
     server.listen((request) async {
       connections++;
-      handshakeStarted.complete();
+      if (!handshakeStarted.isCompleted) handshakeStarted.complete();
       if (allowHandshake != null) await allowHandshake!.future;
-      peer.complete(await WebSocketTransformer.upgrade(request));
+      upgraded.add(await WebSocketTransformer.upgrade(request));
     });
-    peerFuture = peer.future;
+    peerFuture = upgraded.stream.first;
     refresh = Completer<http.Response>();
     refreshStarted = Completer<void>();
     requests = 0;
@@ -59,14 +60,15 @@ void main() {
     });
   });
 
-  Future<(WebSocket, StreamIterator<dynamic>)> authenticate() async {
-    await console.connect();
+  Future<(WebSocket, StreamIterator<dynamic>)> authenticate([ConsoleSocket? socket]) async {
+    final target = socket ?? console;
+    await target.connect();
     final peer = await peerFuture;
     final frames = StreamIterator(peer);
     addTearDown(frames.cancel);
     expect(await frames.moveNext(), isTrue);
     expect(jsonDecode(frames.current as String)['event'], 'auth');
-    final authenticated = console.events.firstWhere((event) => event is AuthSuccess);
+    final authenticated = target.events.firstWhere((event) => event is AuthSuccess);
     peer.add('{"event":"auth success"}');
     await authenticated;
     return (peer, frames);
@@ -211,6 +213,107 @@ void main() {
     expect(jsonDecode(frames.current as String), {
       'event': 'send command',
       'args': ['after-auth'],
+    });
+  });
+
+  test('reconnect waits double from 1 s and stop growing at 30 s', () {
+    expect([for (var i = 0; i < 8; i++) reconnectDelay(i).inSeconds], [1, 2, 4, 8, 16, 30, 30, 30]);
+  });
+
+  group('auto-reconnect', () {
+    const fast = Duration(milliseconds: 10);
+    String details(String token) => jsonEncode({
+          'data': {'token': token, 'socket': 'ws://127.0.0.1:${server.port}'},
+        });
+
+    late ConsoleSocket quick;
+    late List<ConsoleEvent> events;
+    setUp(() {
+      quick = ConsoleSocket(console.apiClient, 'abc', retryBase: fast);
+      addTearDown(quick.dispose);
+      events = [];
+      final subscription = quick.events.listen(events.add);
+      addTearDown(subscription.cancel);
+    });
+
+    Future<void> settle() => Future<void>.delayed(const Duration(milliseconds: 100));
+
+    test('an unexpected drop reconnects with a fresh token', () async {
+      final (peer, _) = await authenticate(quick);
+      final second = upgraded.stream.first;
+      refresh.complete(http.Response(details('fresh-token'), 200));
+      final reauthenticated = quick.events.firstWhere((event) => event is AuthSuccess);
+      await peer.close(); // the panel drops the connection
+
+      final peer2 = await second;
+      final frames = StreamIterator(peer2);
+      addTearDown(frames.cancel);
+      expect(await frames.moveNext(), isTrue);
+      expect(jsonDecode(frames.current as String), {
+        'event': 'auth',
+        'args': ['fresh-token'],
+      });
+      peer2.add('{"event":"auth success"}');
+      await reauthenticated;
+      expect(quick.state, ConsoleConnectionState.authenticated);
+      expect(events.whereType<SocketClosed>(), hasLength(1));
+      expect(events.whereType<Reconnecting>().single.delay, fast);
+      expect(connections, 2);
+    });
+
+    test('a failed attempt backs off and tries again', () async {
+      final (peer, _) = await authenticate(quick);
+      refresh.complete(http.Response('', 502)); // every lookup after the first fails
+      await peer.close();
+      await quick.events.where((event) => event is Reconnecting).take(3).drain<void>();
+      expect(events.whereType<Reconnecting>().map((e) => e.delay).take(3), [fast, fast * 2, fast * 4]);
+      expect(connections, 1);
+    });
+
+    test('a rejected token stops retrying', () async {
+      final (peer, _) = await authenticate(quick);
+      final closed = quick.events.firstWhere((event) => event is SocketClosed);
+      peer.add('{"event":"jwt error","args":["denied"]}');
+      await closed;
+      await settle();
+      expect(events.whereType<Reconnecting>(), isEmpty);
+      expect(requests, 1);
+      expect(quick.state, ConsoleConnectionState.disconnected);
+    });
+
+    test('an auth error while reconnecting gives up', () async {
+      final (peer, _) = await authenticate(quick);
+      refresh.complete(http.Response('', 401));
+      final closedTwice = quick.events.where((event) => event is SocketClosed).take(2).drain<void>();
+      await peer.close();
+      await closedTwice;
+      await settle();
+      expect(events.whereType<Reconnecting>(), hasLength(1));
+      expect(requests, 2);
+    });
+
+    test('a server last seen offline is not reconnected', () async {
+      final (peer, _) = await authenticate(quick);
+      final status = quick.events.firstWhere((event) => event is StatusChanged);
+      peer.add('{"event":"status","args":["offline"]}');
+      await status;
+      final closed = quick.events.firstWhere((event) => event is SocketClosed);
+      await peer.close();
+      await closed;
+      await settle();
+      expect(events.whereType<Reconnecting>(), isEmpty);
+      expect(requests, 1);
+    });
+
+    test('disposing cancels a pending reconnect', () async {
+      final (peer, _) = await authenticate(quick);
+      final waiting = quick.events.firstWhere((event) => event is Reconnecting);
+      await peer.close();
+      await waiting;
+      await quick.dispose();
+      await settle();
+      expect(requests, 1);
+      expect(connections, 1);
     });
   });
 }

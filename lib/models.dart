@@ -115,6 +115,8 @@ sealed class ConsoleEvent {
         return const TokenExpiring();
       case 'token expired':
         return const TokenExpired();
+      case 'jwt error':
+        return const JwtError();
       default:
         return UnknownEvent(event);
     }
@@ -156,4 +158,15 @@ class UnknownEvent extends ConsoleEvent {
 /// Emitted locally (not a server frame) when the socket connection closes.
 class SocketClosed extends ConsoleEvent {
   const SocketClosed();
+}
+
+/// The panel rejected the socket's token (e.g. revoked key or lost access).
+class JwtError extends ConsoleEvent {
+  const JwtError();
+}
+
+/// Emitted locally after a [SocketClosed] when a reconnect is scheduled.
+class Reconnecting extends ConsoleEvent {
+  final Duration delay;
+  const Reconnecting(this.delay);
 }
