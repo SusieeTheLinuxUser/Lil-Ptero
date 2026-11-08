@@ -3,7 +3,7 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
@@ -43,11 +43,18 @@
         <!-- flutter_background_service's own manifest doesn't declare a
              foregroundServiceType, which Android 14+ requires — merge it in
              here rather than overriding the whole <service> (that previously
-             conflicted with the plugin's own exported/stopWithTask values). -->
+             conflicted with the plugin's own exported/stopWithTask values).
+             specialUse, not dataSync: Android 15 caps dataSync at 6 h a day
+             (and the plugin has no onTimeout, so the app would crash) and
+             forbids starting it from BOOT_COMPLETED. -->
         <service
             android:name="id.flutter.flutter_background_service.BackgroundService"
-            android:foregroundServiceType="dataSync"
-            tools:node="merge" />
+            android:foregroundServiceType="specialUse"
+            tools:node="merge">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Polls the user's own game servers and alerts when one stops" />
+        </service>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

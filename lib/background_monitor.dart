@@ -120,7 +120,8 @@ class BackgroundMonitor {
 
   static Future<void> _pollOnce(FlutterLocalNotificationsPlugin notifications) async {
     final credentials = await Credentials.load();
-    if (credentials == null) return;
+    // Throw, so the notification says "Check failed" instead of a fresh "Last checked".
+    if (credentials == null) throw StateError('Not logged in');
 
     final lastStatesRaw = await _storage.read(key: _lastStatesKey);
     final lastStates = lastStatesRaw == null
