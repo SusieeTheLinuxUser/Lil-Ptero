@@ -1,0 +1,7 @@
+- New: the app tells you when a newer version is out (turn off in Settings)
+- Only https panels are accepted, so your API key is never sent unencrypted
+- Saved login is kept out of backups and phone transfers; log in again on a new phone
+- A server's Overview tab shows its CPU limit
+- Server watcher: fewer false "server stopped" alerts, stops on Disconnect
+- Console no longer gets stuck connecting
+- Fixed a startup hang, the CPU gauge, and panel URLs ending in a slash

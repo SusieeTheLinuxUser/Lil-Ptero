@@ -50,7 +50,7 @@ void main() {
       return version != null && isNewerVersion(version, appVersion);
     }
 
-    test('newer release -> true', () => expect(newer('${_tagUrl}v0.1.4'), isTrue));
+    test('newer release -> true', () => expect(newer('${_tagUrl}v99.0.0'), isTrue));
     test('same release -> false', () => expect(newer('${_tagUrl}v$appVersion'), isFalse));
     test('older release -> false', () => expect(newer('${_tagUrl}v0.1.2'), isFalse));
     test('garbage location -> false', () {
@@ -88,11 +88,11 @@ void main() {
       final version = await fetchNewerVersionName(
         fdroid: true,
         fdroidClient: MockClient((_) async => http.Response(
-              '{"suggestedVersionCode":5,"packages":[{"versionName":"0.1.4","versionCode":5}]}',
+              '{"suggestedVersionCode":999,"packages":[{"versionName":"99.0.0","versionCode":999}]}',
               200,
             )),
       );
-      expect(version, '0.1.4');
+      expect(version, '99.0.0');
     });
     test('same version under its ABI-scaled code -> null (up to date)', () async {
       // Split APKs carry build * 10 + ABI digit (e.g. 43), far above the plain build
