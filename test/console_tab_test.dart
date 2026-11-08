@@ -57,4 +57,29 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsNothing);
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  testWidgets('no disconnected banner before the first connect attempt', (tester) async {
+    // A swipe builds the Console page while the tab index is still 0.
+    await tester.pumpWidget(MaterialApp(
+      home: DefaultTabController(
+        length: 2,
+        child: Builder(builder: (context) {
+          return Scaffold(
+            body: ConsoleTab(
+              credentials: const Credentials(panelUrl: 'https://panel.example.com', apiKey: 'test-only'),
+              apiClient: PterodactylApiClient(
+                const Credentials(panelUrl: 'https://panel.example.com', apiKey: 'test-only'),
+                client: MockClient((_) async => http.Response('', 500)),
+              ),
+              server: const PteroServer(identifier: 'abc', name: 'Test'),
+              tabController: DefaultTabController.of(context),
+            ),
+          );
+        }),
+      ),
+    ));
+    expect(find.text('Console disconnected'), findsNothing);
+    expect(find.text('Reconnect'), findsNothing);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 }

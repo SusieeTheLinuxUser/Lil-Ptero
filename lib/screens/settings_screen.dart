@@ -88,7 +88,14 @@ class SettingsScreen extends StatelessWidget {
                       'Runs a background service that watches your servers and notifies you if one stops or crashes',
                     ),
                     value: enabled,
-                    onChanged: NotificationPrefs.setEnabled,
+                    onChanged: (value) async {
+                      if (await NotificationPrefs.setEnabled(value) || !context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Allow notifications for Pterodactyl Mobile in Android settings first.'),
+                        ),
+                      );
+                    },
                   ),
                   if (enabled)
                     const ListTile(

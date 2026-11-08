@@ -18,19 +18,16 @@ class NotificationPrefs {
     final saved = await _storage.read(key: _enabledKey);
     enabled.value = saved == 'true';
 
-    final plugin = FlutterLocalNotificationsPlugin();
-    await plugin.initialize(
-      const InitializationSettings(android: AndroidInitializationSettings('@mipmap/ic_launcher')),
-    );
-    await plugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
-
     await BackgroundMonitor.configure(autoStartOnBoot: enabled.value);
     if (enabled.value) await BackgroundMonitor.start();
   }
 
-  static Future<void> setEnabled(bool value) async {
+  /// Returns false (and stays off) when turning on is refused because the
+  /// notification permission was denied: alerts would never show.
+  static Future<bool> setEnabled(bool value) async {
+    // Ask only when the user opts in, not on every launch. null = Android 12
+    // or older, where there's no runtime permission.
+    if (value && await _requestPermission() == false) return false;
     enabled.value = value;
     await _storage.write(key: _enabledKey, value: value.toString());
     await BackgroundMonitor.configure(autoStartOnBoot: value);
@@ -39,5 +36,16 @@ class NotificationPrefs {
     } else {
       await BackgroundMonitor.stop();
     }
+    return true;
+  }
+
+  static Future<bool?> _requestPermission() async {
+    final plugin = FlutterLocalNotificationsPlugin();
+    await plugin.initialize(
+      const InitializationSettings(android: AndroidInitializationSettings('@mipmap/ic_launcher')),
+    );
+    return plugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestNotificationsPermission();
   }
 }

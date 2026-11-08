@@ -138,7 +138,8 @@ class _ConsoleTabState extends State<ConsoleTab> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        if (_error != null || (!_connected && !_connecting))
+        // _socket == null before the first attempt (tab swiped into view, not yet settled): no banner yet.
+        if (_error != null || (_socket != null && !_connected && !_connecting))
           MaterialBanner(
             content: Text(_error ?? 'Console disconnected'),
             actions: [TextButton(onPressed: _reconnect, child: const Text('Reconnect'))],
