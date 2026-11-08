@@ -18,7 +18,8 @@ void main() {
     FlutterBackgroundServiceAndroid.registerWith();
     calls = [];
     messenger.setMockMethodCallHandler(storage, (call) async {
-      calls.add('storage.${call.method}');
+      final args = call.arguments as Map?;
+      calls.add(call.method == 'write' ? 'storage.write:${args?['key']}=${args?['value']}' : 'storage.${call.method}');
       return null;
     });
     messenger.setMockMethodCallHandler(service, (call) async {
@@ -54,6 +55,6 @@ void main() {
     permission(granted: true);
     expect(await NotificationPrefs.setEnabled(true), isTrue);
     expect(NotificationPrefs.enabled.value, isTrue);
-    expect(calls, containsAllInOrder(['storage.write', 'service.configure', 'service.start']));
+    expect(calls, containsAllInOrder(['storage.write:notifications_enabled=true', 'service.configure', 'service.start']));
   });
 }
