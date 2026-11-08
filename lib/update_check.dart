@@ -17,7 +17,7 @@ const fdroidClients = {
 
 /// Keep in sync with `version:` in pubspec.yaml (X.Y.Z+buildNumber);
 /// test/update_check_test.dart fails the build if they drift.
-const String appVersion = '0.1.3';
+const String appVersion = '0.1.4';
 
 const _fdroidApiUrl = 'https://f-droid.org/api/v1/packages/dev.susiee.lilptero';
 const githubLatestUrl = 'https://github.com/SusieeTheLinuxUser/Lil-Ptero/releases/latest';
