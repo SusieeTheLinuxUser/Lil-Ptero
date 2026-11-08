@@ -22,7 +22,7 @@ Keep following this pattern: reach for the SDK/stdlib/native feature first, and 
 
 `flutter_local_notifications` requires Java core-library desugaring, which is why `isCoreLibraryDesugaringEnabled` and the `desugar_jdk_libs` dependency are in [android/app/build.gradle.kts](android/app/build.gradle.kts). Don't remove them.
 
-Don't add speculative abstractions, config for values that never change, or scaffolding "for later." A `ponytail:`-style comment in the code marking a deliberate corner cut (e.g. single-page server list fetch, no auto-reconnect backoff) means: that's intentional for v1, not a bug — extend it only when it's actually needed, not preemptively.
+Don't add speculative abstractions, config for values that never change, or scaffolding "for later." A `ponytail:`-style comment in the code marking a deliberate corner cut (e.g. a fixed 30 s background poll, no reconnect attempt limit) means: that's intentional for v1, not a bug — extend it only when it's actually needed, not preemptively.
 
 ## Repo layout
 
@@ -126,6 +126,12 @@ Known local gotcha: if your default JDK is very new (e.g. 21+), the Android Grad
 - `_pollOnce` throws when there are no saved credentials, so the persistent notification says "Check failed" rather than a misleading "Last checked".
 - The console's "disconnected" banner waits for the first connect attempt (`_socket != null`), so a swipe into the tab doesn't flash it.
 
+### Console auto-reconnect and server-list pagination (2026-11-08)
+
+- `ConsoleSocket` reconnects by itself after any drop (socket closed, auth timeout, malformed frame, failed token refresh, `token expired`), waiting `reconnectDelay`: 1, 2, 4, 8, 16, then 30 s, with no attempt limit. Each drop emits `SocketClosed`, followed by `Reconnecting(delay)` when a retry is scheduled. It stops for good on a `jwt error` frame, a 401/403 from the websocket-token endpoint, a server last seen `offline` (from `status` frames), or `dispose()`, which runs when the user leaves the console. The first `connect()` still throws instead of retrying. The tab shows "Reconnecting in Ns…" with a "Reconnect now" button; manual Reconnect is unchanged.
+- Covered by the `auto-reconnect` group in `test/console_socket_test.dart` (the loopback server now accepts several connections through the `upgraded` stream). Still needs a device check: real network loss and Wi-Fi to mobile handoff.
+- `listServers()` requests `/api/client?page=N` until `meta.pagination.total_pages`, stopping at 50 pages. The background monitor gets every page too. Covered in `test/api_client_test.dart`.
+
 ## The Pterodactyl Client API (what this app talks to)
 
 Base path: `{panel_url}/api/client`, header `Authorization: Bearer {api_key}`, `Accept: application/json`. The user supplies their own panel URL + a personal **Client** API key (not an Application/admin key) — see [lib/api_client.dart](lib/api_client.dart) for everything currently implemented:
@@ -166,9 +172,9 @@ Not yet implemented (intentionally out of v1 scope, see roadmap below): file man
 
 - Android only — no iOS build yet.
 - Single-panel connection at a time — no multi-panel/multi-account support.
-- Server list handles only the first page of results (`meta.pagination` from `GET /api/client` isn't followed).
-- Console reconnect after a drop is manual (a button), not automatic with backoff.
 - No file manager, backups, schedules, or database management.
+
+No longer cuts (approved 2026-11-08): `listServers()` follows `meta.pagination` (capped at `maxServerPages` = 50), and the console reconnects on its own after a drop (see the 2026-11-08 notes above).
 
 These are deliberate v1 cuts, not oversights — check with the maintainer (or open an issue) before taking on one of these as a big PR.
 

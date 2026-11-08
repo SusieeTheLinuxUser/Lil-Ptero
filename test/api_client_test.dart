@@ -33,6 +33,41 @@ void main() {
     expect(jsonDecode(requests.last.body), {'signal': 'start'});
   });
 
+  String page(int number, int totalPages) => jsonEncode({
+        'data': [
+          {
+            'attributes': {'identifier': 's$number', 'name': 'Server $number'}
+          }
+        ],
+        'meta': {
+          'pagination': {'current_page': number, 'total_pages': totalPages}
+        },
+      });
+
+  test('follows meta.pagination until every page is loaded', () async {
+    final pages = <String?>[];
+    final api = PterodactylApiClient(credentials, client: MockClient((request) async {
+      pages.add(request.url.queryParameters['page']);
+      return http.Response(page(int.parse(request.url.queryParameters['page']!), 3), 200);
+    }));
+    addTearDown(api.close);
+
+    expect((await api.listServers()).map((s) => s.name), ['Server 1', 'Server 2', 'Server 3']);
+    expect(pages, ['1', '2', '3']);
+  });
+
+  test('stops at the page cap when a panel never reports a last page', () async {
+    var requests = 0;
+    final api = PterodactylApiClient(credentials, client: MockClient((request) async {
+      requests++;
+      return http.Response(page(requests, 100000), 200);
+    }));
+    addTearDown(api.close);
+
+    expect(await api.listServers(), hasLength(PterodactylApiClient.maxServerPages));
+    expect(requests, PterodactylApiClient.maxServerPages);
+  });
+
   test('never sends the API key to a plain http panel', () async {
     var sent = false;
     final api = PterodactylApiClient(

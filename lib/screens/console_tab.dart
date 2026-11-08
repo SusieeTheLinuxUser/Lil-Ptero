@@ -30,6 +30,7 @@ class _ConsoleTabState extends State<ConsoleTab> {
   bool _connecting = false;
   bool _connected = false;
   String? _error;
+  Duration? _retryIn; // set while the socket waits to reconnect on its own
 
   @override
   void initState() {
@@ -88,6 +89,7 @@ class _ConsoleTabState extends State<ConsoleTab> {
         setState(() {
           _connecting = false;
           _connected = true;
+          _retryIn = null;
         });
       case TokenExpiring():
         setState(() {
@@ -104,7 +106,10 @@ class _ConsoleTabState extends State<ConsoleTab> {
         setState(() {
           _connecting = false;
           _connected = false;
+          _retryIn = null;
         });
+      case Reconnecting(:final delay):
+        setState(() => _retryIn = delay);
       default:
         break;
     }
@@ -130,7 +135,10 @@ class _ConsoleTabState extends State<ConsoleTab> {
     _subscription?.cancel();
     _socket?.dispose();
     _socket = null;
-    setState(() => _lines.clear());
+    setState(() {
+      _lines.clear();
+      _retryIn = null;
+    });
     _connect();
   }
 
@@ -139,10 +147,15 @@ class _ConsoleTabState extends State<ConsoleTab> {
     return Column(
       children: [
         // _socket == null before the first attempt (tab swiped into view, not yet settled): no banner yet.
-        if (_error != null || (_socket != null && !_connected && !_connecting))
+        if (_error != null || _retryIn != null || (_socket != null && !_connected && !_connecting))
           MaterialBanner(
-            content: Text(_error ?? 'Console disconnected'),
-            actions: [TextButton(onPressed: _reconnect, child: const Text('Reconnect'))],
+            content: Text(_error ??
+                (_retryIn != null
+                    ? 'Connection lost. Reconnecting in ${_retryIn!.inSeconds}s…'
+                    : 'Console disconnected')),
+            actions: [
+              TextButton(onPressed: _reconnect, child: Text(_retryIn != null ? 'Reconnect now' : 'Reconnect')),
+            ],
           ),
         Expanded(
           child: _connecting && _lines.isEmpty
