@@ -60,6 +60,13 @@ void main() {
     expect(store.containsKey(lastCheckKey), isFalse);
   });
 
+  test('an unreadable 200 body does not stamp the 24h timer', () async {
+    await UpdatePrefs.maybeCheckAndNotify(
+      fdroidClient: fdroidClient((_) async => http.Response('<html>error</html>', 200)),
+    );
+    expect(store.containsKey(lastCheckKey), isFalse);
+  });
+
   test('an HTTP error does not stamp the 24h timer', () async {
     await UpdatePrefs.maybeCheckAndNotify(
       fdroidClient: fdroidClient((_) async => http.Response('boom', 500)),

@@ -117,7 +117,8 @@ Future<String?> _fetchFdroid(http.Client? client) async {
     // Names, not version codes: each ABI's APK has its own code (build * 10 + ABI
     // digit), so the suggested code is no measure of "newer" for this phone.
     final name = fdroidLatestVersionName(response.body);
-    return name != null && isNewerVersion(name, appVersion) ? name : null;
+    if (name == null) throw const FormatException('unreadable F-Droid response');
+    return isNewerVersion(name, appVersion) ? name : null;
   } finally {
     if (client == null) effective.close();
   }
