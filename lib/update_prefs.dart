@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:http/http.dart' as http;
 
 import 'update_check.dart';
 
@@ -42,14 +43,21 @@ class UpdatePrefs {
 
   /// Checks for a newer version at most once per 24h and, if one is out,
   /// shows a dismissible SnackBar. Never throws: any failure is silent.
-  static Future<void> maybeCheckAndNotify() async {
+  /// The 24h timer is stamped only after a check that completed, so a
+  /// failed one retries on the next launch. [fdroidClient] is for tests.
+  static Future<void> maybeCheckAndNotify({http.Client? fdroidClient}) async {
     if (!enabled.value) return;
     final last = int.tryParse(await _storage.read(key: _lastCheckKey) ?? '');
     final now = DateTime.now().millisecondsSinceEpoch;
     if (last != null && now - last < _checkInterval.inMilliseconds) return;
-    await _storage.write(key: _lastCheckKey, value: now.toString());
     final fdroid = fdroidClients.contains(await _installer());
-    final version = await fetchNewerVersionName(fdroid: fdroid);
+    final String? version;
+    try {
+      version = await fetchNewerVersionName(fdroid: fdroid, fdroidClient: fdroidClient);
+    } catch (_) {
+      return; // failed check: leave the timer alone so the next launch retries
+    }
+    await _storage.write(key: _lastCheckKey, value: now.toString());
     if (version == null) return;
     final messenger = updateScaffoldMessengerKey.currentState;
     if (messenger == null) return;

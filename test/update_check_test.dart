@@ -113,12 +113,14 @@ void main() {
       );
       expect(version, isNull);
     });
-    test('server error -> null, silently', () async {
-      final version = await fetchNewerVersionName(
-        fdroid: true,
-        fdroidClient: MockClient((_) async => http.Response('boom', 500)),
+    test('server error -> throws, so the caller can retry later', () async {
+      await expectLater(
+        fetchNewerVersionName(
+          fdroid: true,
+          fdroidClient: MockClient((_) async => http.Response('boom', 500)),
+        ),
+        throwsA(isA<Exception>()),
       );
-      expect(version, isNull);
     });
   });
 

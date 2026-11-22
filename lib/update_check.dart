@@ -98,14 +98,12 @@ String? fdroidLatestVersionName(String body) {
 }
 
 /// Newest published version name ("X.Y.Z") if it's newer than this build,
-/// else null. Silent on any network error or timeout — a failed check
-/// must never nag or crash the app. [fdroidClient] is injectable for tests.
+/// else null. Throws when the check itself failed (network error, timeout,
+/// unexpected status): the caller has to tell that apart from "no update",
+/// so a failed check can be retried instead of skipped for a day.
+/// [fdroidClient] is injectable for tests.
 Future<String?> fetchNewerVersionName({required bool fdroid, http.Client? fdroidClient}) async {
-  try {
-    return fdroid ? await _fetchFdroid(fdroidClient) : await _fetchGithub();
-  } catch (_) {
-    return null;
-  }
+  return fdroid ? await _fetchFdroid(fdroidClient) : await _fetchGithub();
 }
 
 Future<String?> _fetchFdroid(http.Client? client) async {
@@ -113,7 +111,9 @@ Future<String?> _fetchFdroid(http.Client? client) async {
   try {
     final response = await effective.get(Uri.parse(_fdroidApiUrl)).timeout(updateCheckTimeout);
     if (response.statusCode == 404) return null; // not listed on F-Droid yet
-    if (response.statusCode != 200) return null;
+    if (response.statusCode != 200) {
+      throw Exception('F-Droid answered HTTP ${response.statusCode}');
+    }
     // Names, not version codes: each ABI's APK has its own code (build * 10 + ABI
     // digit), so the suggested code is no measure of "newer" for this phone.
     final name = fdroidLatestVersionName(response.body);
@@ -132,7 +132,10 @@ Future<String?> _fetchGithub() async {
     request.followRedirects = false;
     final response = await request.close().timeout(updateCheckTimeout);
     final version = versionFromGithubLocation(response.headers.value(HttpHeaders.locationHeader));
-    return version != null && isNewerVersion(version, appVersion) ? version : null;
+    // Without a release tag there is no way to tell "up to date" from
+    // "the check failed", so treat it as a failure and retry later.
+    if (version == null) throw Exception('no release location header');
+    return isNewerVersion(version, appVersion) ? version : null;
   } finally {
     client.close(force: true);
   }
