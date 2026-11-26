@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:crypto/crypto.dart';
+
 import 'api_client.dart';
 import 'models.dart';
 
@@ -44,6 +46,10 @@ Duration reconnectDelay(int attempt, {Duration base = const Duration(seconds: 1)
     base * min(1 << min(attempt, 5), 30);
 
 bool _isAuthError(Object error) => error is ApiException && (error.statusCode == 401 || error.statusCode == 403);
+
+/// Maps a validated websocket URI to the corresponding HTTP upgrade URI.
+Uri websocketHandshakeUri(Uri socketUri) =>
+    socketUri.replace(scheme: socketUri.scheme == 'wss' ? 'https' : 'http');
 
 /// Wraps a Pterodactyl console websocket: fetches a token, connects,
 /// authenticates, refreshes the token in place on `token expiring`, and
@@ -96,11 +102,17 @@ class ConsoleSocket {
       if (_isAuthError(e)) _authRejected = true;
       rethrow;
     }
+    final socketUri = Uri.tryParse(details.socketUrl);
+    final isLoopback = socketUri?.host == 'localhost' ||
+        socketUri?.host == '127.0.0.1' ||
+        socketUri?.host == '::1';
+    if (socketUri == null ||
+        !socketUri.hasAuthority ||
+        (socketUri.scheme != 'wss' && !(socketUri.scheme == 'ws' && isLoopback))) {
+      throw ApiException('Panel returned an insecure console URL');
+    }
     if (_disposed) return;
-    final pending = WebSocket.connect(
-      details.socketUrl,
-      headers: {'Origin': apiClient.credentials.panelUrl},
-    );
+    final pending = _connectWithoutRedirects(socketUri);
     final WebSocket socket;
     try {
       socket = await pending.timeout(timeout);
@@ -118,6 +130,40 @@ class ConsoleSocket {
     socket.pingInterval = const Duration(seconds: 30);
     _subscription = socket.listen(_handleRaw, onDone: _handleClosed, onError: (_) => _handleClosed());
     _sendAuth(details.token);
+  }
+
+  Future<WebSocket> _connectWithoutRedirects(Uri socketUri) async {
+    final uri = websocketHandshakeUri(socketUri);
+    final client = HttpClient();
+    try {
+      final request = await client.getUrl(uri).timeout(timeout);
+      request.followRedirects = false;
+      final random = Random.secure();
+      final nonce = base64Encode(List<int>.generate(16, (_) => random.nextInt(256)));
+      request.headers
+        ..set(HttpHeaders.connectionHeader, 'Upgrade')
+        ..set(HttpHeaders.upgradeHeader, 'websocket')
+        ..set('Sec-WebSocket-Key', nonce)
+        ..set('Sec-WebSocket-Version', '13')
+        ..set('Origin', apiClient.credentials.panelUrl);
+      final response = await request.close().timeout(timeout);
+      final expected = base64Encode(sha1.convert(utf8.encode('$nonce'
+          '258EAFA5-E914-47DA-95CA-C5AB0DC85B11')).bytes);
+      if (response.statusCode != HttpStatus.switchingProtocols ||
+          response.headers.value(HttpHeaders.upgradeHeader)?.toLowerCase() != 'websocket' ||
+          !(response.headers[HttpHeaders.connectionHeader]
+                  ?.any((value) => value.toLowerCase() == 'upgrade') ??
+              false) ||
+          response.headers.value('Sec-WebSocket-Accept') != expected) {
+        final statusCode = response.statusCode;
+        unawaited(response.detachSocket().then((socket) => socket.destroy(), onError: (_) {}));
+        throw WebSocketException('Console websocket handshake was rejected (HTTP $statusCode)');
+      }
+      final socket = await response.detachSocket();
+      return WebSocket.fromUpgradedSocket(socket, serverSide: false);
+    } finally {
+      client.close(force: true);
+    }
   }
 
   void _sendAuth(String token) {

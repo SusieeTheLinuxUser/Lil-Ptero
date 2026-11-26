@@ -11,6 +11,10 @@ import 'package:pterodactyl_mobile/credentials.dart';
 import 'package:pterodactyl_mobile/models.dart';
 
 void main() {
+  test('uppercase WSS stays on HTTPS for the websocket handshake', () {
+    expect(websocketHandshakeUri(Uri.parse('WSS://node.example.com:8080')).scheme, 'https');
+  });
+
   late HttpServer server;
   late ConsoleSocket console;
   late Future<WebSocket> peerFuture;
@@ -18,6 +22,7 @@ void main() {
   late Completer<http.Response> refresh;
   late int requests;
   late int connections;
+  var redirectHandshake = false;
   late Completer<void> refreshStarted;
   late Completer<void> handshakeStarted;
   Completer<void>? allowHandshake;
@@ -26,10 +31,18 @@ void main() {
     server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     upgraded = StreamController<WebSocket>.broadcast();
     connections = 0;
+    redirectHandshake = false;
     handshakeStarted = Completer<void>();
     allowHandshake = null;
     server.listen((request) async {
       connections++;
+      if (redirectHandshake) {
+        request.response
+          ..statusCode = HttpStatus.found
+          ..headers.set(HttpHeaders.locationHeader, 'ws://127.0.0.1:${server.port}/redirect-target');
+        await request.response.close();
+        return;
+      }
       if (!handshakeStarted.isCompleted) handshakeStarted.complete();
       if (allowHandshake != null) await allowHandshake!.future;
       upgraded.add(await WebSocketTransformer.upgrade(request));
@@ -73,6 +86,30 @@ void main() {
     await authenticated;
     return (peer, frames);
   }
+
+  test('rejects a cleartext console URL from a remote node', () async {
+    final api = PterodactylApiClient(
+      const Credentials(panelUrl: 'https://panel.example.com', apiKey: 'test-only'),
+      client: MockClient((_) async => http.Response(
+            jsonEncode({'data': {'token': 'test-token', 'socket': 'ws://node.example.com:8080'}}),
+            200,
+          )),
+    );
+    final insecure = ConsoleSocket(api, 'abc');
+    addTearDown(() async {
+      await insecure.dispose();
+      api.close();
+    });
+
+    await expectLater(insecure.connect(), throwsA(isA<ApiException>()));
+    expect(insecure.state, ConsoleConnectionState.connecting);
+  });
+
+  test('does not follow websocket handshake redirects', () async {
+    redirectHandshake = true;
+    await expectLater(console.connect(), throwsA(isA<WebSocketException>()));
+    expect(connections, 1);
+  });
 
   test('an auth that is never answered closes the socket instead of spinning forever', () async {
     final quick = ConsoleSocket(console.apiClient, 'abc', timeout: const Duration(milliseconds: 200));
