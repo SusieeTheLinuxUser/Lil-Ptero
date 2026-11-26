@@ -96,6 +96,15 @@ class ConsoleSocket {
       if (_isAuthError(e)) _authRejected = true;
       rethrow;
     }
+    final socketUri = Uri.tryParse(details.socketUrl);
+    final isLoopback = socketUri?.host == 'localhost' ||
+        socketUri?.host == '127.0.0.1' ||
+        socketUri?.host == '::1';
+    if (socketUri == null ||
+        !socketUri.hasAuthority ||
+        (socketUri.scheme != 'wss' && !(socketUri.scheme == 'ws' && isLoopback))) {
+      throw ApiException('Panel returned an insecure console URL');
+    }
     if (_disposed) return;
     final pending = WebSocket.connect(
       details.socketUrl,

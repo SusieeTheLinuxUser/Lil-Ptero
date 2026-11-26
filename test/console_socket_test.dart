@@ -74,6 +74,24 @@ void main() {
     return (peer, frames);
   }
 
+  test('rejects a cleartext console URL from a remote node', () async {
+    final api = PterodactylApiClient(
+      const Credentials(panelUrl: 'https://panel.example.com', apiKey: 'test-only'),
+      client: MockClient((_) async => http.Response(
+            jsonEncode({'data': {'token': 'test-token', 'socket': 'ws://node.example.com:8080'}}),
+            200,
+          )),
+    );
+    final insecure = ConsoleSocket(api, 'abc');
+    addTearDown(() async {
+      await insecure.dispose();
+      api.close();
+    });
+
+    await expectLater(insecure.connect(), throwsA(isA<ApiException>()));
+    expect(insecure.state, ConsoleConnectionState.connecting);
+  });
+
   test('an auth that is never answered closes the socket instead of spinning forever', () async {
     final quick = ConsoleSocket(console.apiClient, 'abc', timeout: const Duration(milliseconds: 200));
     addTearDown(quick.dispose);
