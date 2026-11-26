@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:crypto/crypto.dart';
+
 import 'api_client.dart';
 import 'models.dart';
 
@@ -106,10 +108,7 @@ class ConsoleSocket {
       throw ApiException('Panel returned an insecure console URL');
     }
     if (_disposed) return;
-    final pending = WebSocket.connect(
-      details.socketUrl,
-      headers: {'Origin': apiClient.credentials.panelUrl},
-    );
+    final pending = _connectWithoutRedirects(details.socketUrl);
     final WebSocket socket;
     try {
       socket = await pending.timeout(timeout);
@@ -127,6 +126,36 @@ class ConsoleSocket {
     socket.pingInterval = const Duration(seconds: 30);
     _subscription = socket.listen(_handleRaw, onDone: _handleClosed, onError: (_) => _handleClosed());
     _sendAuth(details.token);
+  }
+
+  Future<WebSocket> _connectWithoutRedirects(String url) async {
+    final uri = Uri.parse(url).replace(scheme: url.startsWith('wss:') ? 'https' : 'http');
+    final client = HttpClient();
+    try {
+      final request = await client.getUrl(uri).timeout(timeout);
+      request.followRedirects = false;
+      final nonce = base64Encode(List<int>.generate(16, (_) => Random.secure().nextInt(256)));
+      request.headers
+        ..set(HttpHeaders.connectionHeader, 'Upgrade')
+        ..set(HttpHeaders.upgradeHeader, 'websocket')
+        ..set('Sec-WebSocket-Key', nonce)
+        ..set('Sec-WebSocket-Version', '13')
+        ..set('Origin', apiClient.credentials.panelUrl);
+      final response = await request.close().timeout(timeout);
+      final expected = base64Encode(sha1.convert(utf8.encode('$nonce'
+          '258EAFA5-E914-47DA-95CA-C5AB0DC85B11')).bytes);
+      if (response.statusCode != HttpStatus.switchingProtocols ||
+          response.headers.value(HttpHeaders.upgradeHeader)?.toLowerCase() != 'websocket' ||
+          response.headers.value(HttpHeaders.connectionHeader)?.toLowerCase() != 'upgrade' ||
+          response.headers.value('Sec-WebSocket-Accept') != expected) {
+        await response.drain<void>();
+        throw const WebSocketException('Console websocket handshake was rejected');
+      }
+      final socket = await response.detachSocket();
+      return WebSocket.fromUpgradedSocket(socket, serverSide: false);
+    } finally {
+      client.close(force: true);
+    }
   }
 
   void _sendAuth(String token) {
