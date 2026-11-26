@@ -1,5 +1,7 @@
 # F-Droid reviewer handoff
 
+> **Closed 2026-11-26.** The user withdrew the official F-Droid MR [!49236](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/49236) by choice. The app now ships to F-Droid clients through our own repo, https://susieethelinuxuser.github.io/fdroid/repo (source and workflow: [SusieeTheLinuxUser/fdroid](https://github.com/SusieeTheLinuxUser/fdroid)). Everything below about the MR is history. Leave `~/development/fdroiddata` alone.
+
 Use this file for the current F-Droid task instead of rereading the full project documentation.
 
 ## Current state (verified 2026-09-19 against GitLab's API, not assumed from an older summary)

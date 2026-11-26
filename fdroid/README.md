@@ -1,5 +1,7 @@
 # Submitting to F-Droid
 
+> **Closed 2026-11-26.** The user withdrew the official F-Droid MR [!49236](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/49236) by choice. The app now ships to F-Droid clients through our own repo, https://susieethelinuxuser.github.io/fdroid/repo (source and workflow: [SusieeTheLinuxUser/fdroid](https://github.com/SusieeTheLinuxUser/fdroid)). Everything below about the MR is history. Leave `~/development/fdroiddata` alone.
+
 Status: **all reviewer feedback addressed and pushed — waiting on F-Droid, not on us.** [Merge request !49236](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/49236) is open against `fdroiddata`, from `gitlab.com/SusieeTheLinuxUser/fdroiddata` branch `dev.susiee.lilptero` (head `d1d7e706`). Reviewer `linsui` went through three rounds — Flutter template + ABI split, then reproducible-build metadata, then pinning the Flutter version and a version-agnostic JNI patch path — and on 2026-09-18 called the MR "mostly ready," to be tested when they get to it; fdroiddata has a large review backlog. **No action needed unless a new app version ships**, in which case update this MR rather than opening a new one. For a compact agent handoff, read [AI_HANDOFF.md](AI_HANDOFF.md).
 
 ## CI feedback so far
@@ -154,7 +156,3 @@ Everything needed to get here is already set up on this machine (and reproducibl
 13. Once merged, the app appears in the official F-Droid repo within a build cycle or two.
 
 The RFP issue ([rfp-issue-draft.md](rfp-issue-draft.md)) was not filed — the direct MR was opened instead, per F-Droid's own recommendation (see above). If a future agent is asked to file it anyway, skim [f-droid.org/wiki/page/Inclusion_Policy](https://f-droid.org/wiki/page/Inclusion_Policy) before checking the "complies with the inclusion criteria" box — that's a claim made to F-Droid, not something to check on a memory of this file alone.
-
-## Faster alternative: self-hosted repo
-
-If you don't want to wait on the review queue, `fdroidserver` can also build and host your own personal F-Droid repo (a URL users add to the F-Droid client) without going through the official `fdroiddata` review — see [F-Droid's docs on running your own repository](https://f-droid.org/docs/Setup_an_F-Droid_App_Repo/). It publishes immediately but won't show up in the default F-Droid app's catalog until/unless the official submission above also lands.

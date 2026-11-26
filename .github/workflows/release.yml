@@ -53,3 +53,17 @@ jobs:
           generate_release_notes: true
           body: |
             Pick the APK matching your device's CPU — `arm64-v8a` covers essentially all phones sold since ~2017; use `armeabi-v7a` only for very old 32-bit-only devices, `x86_64` only for x86 emulators/devices.
+
+      # Tell SusieeTheLinuxUser/fdroid to republish with the new APKs. Needs a
+      # fine-grained token in the FDROID_DISPATCH_TOKEN secret (Contents: read and
+      # write on that repo). Without it this step does nothing and the fdroid
+      # repo's daily schedule picks the release up instead.
+      - name: Notify F-Droid repository
+        env:
+          GH_TOKEN: ${{ secrets.FDROID_DISPATCH_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "FDROID_DISPATCH_TOKEN not set; the fdroid repo's daily run will pick this up."
+            exit 0
+          fi
+          gh api repos/SusieeTheLinuxUser/fdroid/dispatches -f event_type=lilptero-release
