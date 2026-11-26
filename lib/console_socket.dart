@@ -134,7 +134,8 @@ class ConsoleSocket {
     try {
       final request = await client.getUrl(uri).timeout(timeout);
       request.followRedirects = false;
-      final nonce = base64Encode(List<int>.generate(16, (_) => Random.secure().nextInt(256)));
+      final random = Random.secure();
+      final nonce = base64Encode(List<int>.generate(16, (_) => random.nextInt(256)));
       request.headers
         ..set(HttpHeaders.connectionHeader, 'Upgrade')
         ..set(HttpHeaders.upgradeHeader, 'websocket')
@@ -146,10 +147,13 @@ class ConsoleSocket {
           '258EAFA5-E914-47DA-95CA-C5AB0DC85B11')).bytes);
       if (response.statusCode != HttpStatus.switchingProtocols ||
           response.headers.value(HttpHeaders.upgradeHeader)?.toLowerCase() != 'websocket' ||
-          response.headers.value(HttpHeaders.connectionHeader)?.toLowerCase() != 'upgrade' ||
+          !(response.headers[HttpHeaders.connectionHeader]
+                  ?.any((value) => value.toLowerCase() == 'upgrade') ??
+              false) ||
           response.headers.value('Sec-WebSocket-Accept') != expected) {
+        final statusCode = response.statusCode;
         await response.drain<void>();
-        throw const WebSocketException('Console websocket handshake was rejected');
+        throw WebSocketException('Console websocket handshake was rejected (HTTP $statusCode)');
       }
       final socket = await response.detachSocket();
       return WebSocket.fromUpgradedSocket(socket, serverSide: false);

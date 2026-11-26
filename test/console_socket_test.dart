@@ -18,6 +18,7 @@ void main() {
   late Completer<http.Response> refresh;
   late int requests;
   late int connections;
+  var redirectHandshake = false;
   late Completer<void> refreshStarted;
   late Completer<void> handshakeStarted;
   Completer<void>? allowHandshake;
@@ -26,10 +27,18 @@ void main() {
     server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     upgraded = StreamController<WebSocket>.broadcast();
     connections = 0;
+    redirectHandshake = false;
     handshakeStarted = Completer<void>();
     allowHandshake = null;
     server.listen((request) async {
       connections++;
+      if (redirectHandshake) {
+        request.response
+          ..statusCode = HttpStatus.found
+          ..headers.set(HttpHeaders.locationHeader, 'ws://127.0.0.1:${server.port}/redirect-target');
+        await request.response.close();
+        return;
+      }
       if (!handshakeStarted.isCompleted) handshakeStarted.complete();
       if (allowHandshake != null) await allowHandshake!.future;
       upgraded.add(await WebSocketTransformer.upgrade(request));
@@ -90,6 +99,12 @@ void main() {
 
     await expectLater(insecure.connect(), throwsA(isA<ApiException>()));
     expect(insecure.state, ConsoleConnectionState.connecting);
+  });
+
+  test('does not follow websocket handshake redirects', () async {
+    redirectHandshake = true;
+    await expectLater(console.connect(), throwsA(isA<WebSocketException>()));
+    expect(connections, 1);
   });
 
   test('an auth that is never answered closes the socket instead of spinning forever', () async {
