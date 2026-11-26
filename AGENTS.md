@@ -151,6 +151,7 @@ Not yet implemented (intentionally out of v1 scope, see roadmap below): file man
 - Never hardcode a panel URL, API key, or any other credential in source, tests, or comments — the whole point of this app is that credentials are user-supplied at runtime and stored only in `flutter_secure_storage` (Android Keystore-backed).
 - Don't `print`/`debugPrint` credentials, tokens, or full request/response bodies that might contain them.
 - Don't add cleartext (HTTP) support or a custom network security config that weakens the OS default — Android's cleartext default does not cover `dart:io`, so `api_client.dart` refuses non-https panel URLs itself; the app sends a bearer credential on every request.
+- API requests do not follow redirects. Use the panel's canonical HTTPS URL, because redirecting authenticated requests could expose the bearer key to a panel subdomain.
 - If you touch `credentials.dart` or `api_client.dart`, double-check nothing new gets logged or serialized somewhere it shouldn't.
 
 ## Releases & distribution

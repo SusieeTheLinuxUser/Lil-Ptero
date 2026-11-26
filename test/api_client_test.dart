@@ -31,6 +31,7 @@ void main() {
     expect(requests.first.headers['Authorization'], 'Bearer ${credentials.apiKey}');
     expect(requests.last.url.path, '/api/client/servers/abc/power');
     expect(jsonDecode(requests.last.body), {'signal': 'start'});
+    expect(requests.every((request) => !request.followRedirects), isTrue);
   });
 
   String page(int number, int totalPages) => jsonEncode({
