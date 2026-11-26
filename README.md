@@ -48,7 +48,21 @@ v0.1.2 shipped: server list, resource stats, power controls, live console, dark 
 ## Installing
 
 - **GitHub Releases**: grab the latest signed APK from [Releases](https://github.com/SusieeTheLinuxUser/Lil-Ptero/releases) and sideload it.
-- **F-Droid**: [submitted](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/49236), with reviewer-requested ABI splits and reproducible-build metadata prepared; not yet live in the official repo. See [fdroid/README.md](fdroid/README.md) for the current status and verification evidence.
+- **F-Droid (my own repo)**: see [Get it on my F-Droid repo](#get-it-on-my-f-droid-repo) below.
+
+### Get it on my F-Droid repo
+
+[![Add my F-Droid repo](https://img.shields.io/badge/F--Droid-Add%20my%20repo-1976D2?logo=f-droid&logoColor=white)](https://fdroid.link/#https://susieethelinuxuser.github.io/fdroid/repo?fingerprint=2114A3D71296AC8E8CA4A158DA5AA493E1DDB4F4A71EF173702BFAE18B71773D)
+
+On your phone, tap the button above or scan the QR code. If F-Droid is installed it opens straight away and asks to add the repo. With Droid-ify or Neo Store, the link opens a small fdroid.link page in your browser: tap **Android Deep Link** there.
+
+<img src="fdroid/repo-qr.png" width="180" alt="QR code that adds the Lil-Ptero F-Droid repo">
+
+- Repo address: `https://susieethelinuxuser.github.io/fdroid/repo`
+- Fingerprint: `2114A3D71296AC8E8CA4A158DA5AA493E1DDB4F4A71EF173702BFAE18B71773D`
+- Direct link for any F-Droid client: `fdroidrepos://susieethelinuxuser.github.io/fdroid/repo?fingerprint=2114A3D71296AC8E8CA4A158DA5AA493E1DDB4F4A71EF173702BFAE18B71773D`
+
+The repo serves the same signed APKs as the GitHub releases (app signing key SHA-256 `940bcf557d80048ecd1bc7f2dd02de8f0d4591592b9922ee8f1af299754d56a6`), so you can switch between the two without reinstalling. It updates by itself after each release. Source: [SusieeTheLinuxUser/fdroid](https://github.com/SusieeTheLinuxUser/fdroid).
 
 ## Getting a Client API key
 
