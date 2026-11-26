@@ -47,6 +47,10 @@ Duration reconnectDelay(int attempt, {Duration base = const Duration(seconds: 1)
 
 bool _isAuthError(Object error) => error is ApiException && (error.statusCode == 401 || error.statusCode == 403);
 
+/// Maps a validated websocket URI to the corresponding HTTP upgrade URI.
+Uri websocketHandshakeUri(Uri socketUri) =>
+    socketUri.replace(scheme: socketUri.scheme == 'wss' ? 'https' : 'http');
+
 /// Wraps a Pterodactyl console websocket: fetches a token, connects,
 /// authenticates, refreshes the token in place on `token expiring`, and
 /// surfaces parsed [ConsoleEvent]s (including a local [SocketClosed] on
@@ -108,7 +112,7 @@ class ConsoleSocket {
       throw ApiException('Panel returned an insecure console URL');
     }
     if (_disposed) return;
-    final pending = _connectWithoutRedirects(details.socketUrl);
+    final pending = _connectWithoutRedirects(socketUri);
     final WebSocket socket;
     try {
       socket = await pending.timeout(timeout);
@@ -128,8 +132,8 @@ class ConsoleSocket {
     _sendAuth(details.token);
   }
 
-  Future<WebSocket> _connectWithoutRedirects(String url) async {
-    final uri = Uri.parse(url).replace(scheme: url.startsWith('wss:') ? 'https' : 'http');
+  Future<WebSocket> _connectWithoutRedirects(Uri socketUri) async {
+    final uri = websocketHandshakeUri(socketUri);
     final client = HttpClient();
     try {
       final request = await client.getUrl(uri).timeout(timeout);

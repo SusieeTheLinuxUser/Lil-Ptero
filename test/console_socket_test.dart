@@ -11,6 +11,10 @@ import 'package:pterodactyl_mobile/credentials.dart';
 import 'package:pterodactyl_mobile/models.dart';
 
 void main() {
+  test('uppercase WSS stays on HTTPS for the websocket handshake', () {
+    expect(websocketHandshakeUri(Uri.parse('WSS://node.example.com:8080')).scheme, 'https');
+  });
+
   late HttpServer server;
   late ConsoleSocket console;
   late Future<WebSocket> peerFuture;
