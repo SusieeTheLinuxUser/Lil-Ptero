@@ -29,8 +29,18 @@ class PterodactylApiClient {
         'Content-Type': 'application/json',
       };
 
+  Future<http.Response> _request(String method, String path, {Object? body}) async {
+    final request = http.Request(method, _uri(path))
+      ..headers.addAll(_headers)
+      // A redirect can send the bearer key to a panel subdomain. API calls
+      // must stay on the exact HTTPS origin the user configured.
+      ..followRedirects = false;
+    if (body != null) request.body = jsonEncode(body);
+    return http.Response.fromStream(await _client.send(request));
+  }
+
   Future<T> _get<T>(String path, T Function(Map<String, dynamic>) parse) async {
-    final json = await _send(() => _client.get(_uri(path), headers: _headers));
+    final json = await _send(() => _request('GET', path));
     try {
       return parse(json as Map<String, dynamic>);
     } on TypeError {
@@ -38,9 +48,8 @@ class PterodactylApiClient {
     }
   }
 
-  Future<dynamic> _post(String path, [Map<String, dynamic>? body]) => _send(
-        () => _client.post(_uri(path), headers: _headers, body: body == null ? null : jsonEncode(body)),
-      );
+  Future<dynamic> _post(String path, [Map<String, dynamic>? body]) =>
+      _send(() => _request('POST', path, body: body));
 
   Future<dynamic> _send(Future<http.Response> Function() request) async {
     // Flutter on Android doesn't block plain http, so never send the API key over it.
