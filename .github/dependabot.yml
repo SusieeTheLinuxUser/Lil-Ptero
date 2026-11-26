@@ -4,11 +4,31 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      pub-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      # v11 drops the old v9 key ciphers; users must run a v10 build first so
+      # saved panel API keys migrate. Remove this once v10 has shipped for a while.
+      - dependency-name: "flutter_secure_storage"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: "gradle"
     directory: "/android"
     schedule:
       interval: "weekly"
+    groups:
+      gradle-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      actions-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"

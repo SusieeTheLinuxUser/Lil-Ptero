@@ -33,7 +33,7 @@ void carryForwardPreviousState(
 void backgroundServiceEntrypoint(ServiceInstance service) {
   final notifications = FlutterLocalNotificationsPlugin();
   notifications.initialize(
-    const InitializationSettings(android: AndroidInitializationSettings('@mipmap/ic_launcher')),
+    settings: const InitializationSettings(android: AndroidInitializationSettings('@mipmap/ic_launcher')),
   );
   service.on('stopService').listen((_) => service.stopSelf());
   // Alert only on stops this run sees happen. States saved before a gap (monitor
@@ -144,10 +144,10 @@ class BackgroundMonitor {
 
         if (shouldNotifyOffline(lastStates[server.identifier], state)) {
           await notifications.show(
-            server.identifier.hashCode,
-            server.name,
-            'Server stopped',
-            const NotificationDetails(android: _channel),
+            id: server.identifier.hashCode,
+            title: server.name,
+            body: 'Server stopped',
+            notificationDetails: const NotificationDetails(android: _channel),
           );
         }
       }

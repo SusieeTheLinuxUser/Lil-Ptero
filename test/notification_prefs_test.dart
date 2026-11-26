@@ -26,7 +26,7 @@ void main() {
       calls.add('service.${call.method}');
       return call.method == 'isServiceRunning' ? false : true;
     });
-    messenger.setMockStreamHandler(serviceEvents, MockStreamHandler.inline(onListen: (_, __) {}));
+    messenger.setMockStreamHandler(serviceEvents, MockStreamHandler.inline(onListen: (_, _) {}));
     addTearDown(() {
       for (final channel in [notifications, storage, service]) {
         messenger.setMockMethodCallHandler(channel, null);

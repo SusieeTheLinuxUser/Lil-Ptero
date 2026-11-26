@@ -27,3 +27,5 @@ jobs:
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
+      # Catches native Android breakage from plugin bumps (e.g. compileSdk); release.yml only runs on tags.
+      - run: flutter build apk --debug
