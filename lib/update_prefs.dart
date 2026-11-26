@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'secure_storage.dart';
 import 'package:http/http.dart' as http;
 
 import 'update_check.dart';
@@ -12,7 +12,7 @@ final updateScaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 /// `main` at most once per 24h. Persisted via flutter_secure_storage like
 /// the other prefs. Silent on any failure.
 class UpdatePrefs {
-  static const _storage = FlutterSecureStorage();
+  static const _storage = appSecureStorage;
   static const _enabledKey = 'update_check_enabled';
   static const _lastCheckKey = 'update_check_last_ms';
   static const _checkInterval = Duration(hours: 24);

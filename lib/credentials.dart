@@ -1,4 +1,4 @@
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'secure_storage.dart';
 
 class Credentials {
   final String panelUrl;
@@ -6,7 +6,7 @@ class Credentials {
 
   const Credentials({required this.panelUrl, required this.apiKey});
 
-  static const _storage = FlutterSecureStorage();
+  static const _storage = appSecureStorage;
   static const _panelUrlKey = 'panel_url';
   static const _apiKeyKey = 'api_key';
 

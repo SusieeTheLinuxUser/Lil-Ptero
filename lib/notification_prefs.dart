@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'secure_storage.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import 'background_monitor.dart';
@@ -9,7 +9,7 @@ import 'background_monitor.dart';
 /// this is an opt-in, since it runs a foreground service. Persisted the
 /// same way as [ThemePrefs.accent].
 class NotificationPrefs {
-  static const _storage = FlutterSecureStorage();
+  static const _storage = appSecureStorage;
   static const _enabledKey = 'notifications_enabled';
 
   static final ValueNotifier<bool> enabled = ValueNotifier(false);
@@ -42,7 +42,7 @@ class NotificationPrefs {
   static Future<bool?> _requestPermission() async {
     final plugin = FlutterLocalNotificationsPlugin();
     await plugin.initialize(
-      const InitializationSettings(android: AndroidInitializationSettings('@mipmap/ic_launcher')),
+      settings: const InitializationSettings(android: AndroidInitializationSettings('@mipmap/ic_launcher')),
     );
     return plugin
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()

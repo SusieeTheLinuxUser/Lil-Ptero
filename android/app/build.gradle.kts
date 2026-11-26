@@ -18,7 +18,7 @@ if (hasReleaseSigning) {
 
 android {
     namespace = "dev.susiee.lilptero"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 37 // flutter_local_notifications 23 requires API 37 (Flutter 3.47 defaults to 36)
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
