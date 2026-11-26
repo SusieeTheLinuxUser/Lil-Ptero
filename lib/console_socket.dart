@@ -156,7 +156,7 @@ class ConsoleSocket {
               false) ||
           response.headers.value('Sec-WebSocket-Accept') != expected) {
         final statusCode = response.statusCode;
-        await response.drain<void>();
+        unawaited(response.detachSocket().then((socket) => socket.destroy(), onError: (_) {}));
         throw WebSocketException('Console websocket handshake was rejected (HTTP $statusCode)');
       }
       final socket = await response.detachSocket();
