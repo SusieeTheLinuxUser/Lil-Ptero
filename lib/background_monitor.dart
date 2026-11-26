@@ -3,7 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'secure_storage.dart';
 
 import 'api_client.dart';
 import 'credentials.dart';
@@ -81,7 +81,7 @@ void backgroundServiceEntrypoint(ServiceInstance service) {
 /// revisit if per-server push-style status ever becomes available.
 class BackgroundMonitor {
   static const _pollInterval = Duration(seconds: 30);
-  static const _storage = FlutterSecureStorage();
+  static const _storage = appSecureStorage;
   static const _lastStatesKey = 'background_monitor_last_states';
   static const _channel = AndroidNotificationDetails(
     'server_status',

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'secure_storage.dart';
 
 enum AccentPreset {
   green(Colors.green, 'Green'),
@@ -15,7 +15,7 @@ enum AccentPreset {
 
 /// App is always dark — no light mode. Only the accent color is user-selectable.
 class ThemePrefs {
-  static const _storage = FlutterSecureStorage();
+  static const _storage = appSecureStorage;
   static const _accentKey = 'accent_preset';
 
   static final ValueNotifier<AccentPreset> accent = ValueNotifier(AccentPreset.green);
