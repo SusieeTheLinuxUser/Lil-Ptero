@@ -13,8 +13,12 @@ class ConsoleTab extends StatefulWidget {
   final TabController tabController;
   final PterodactylApiClient? apiClient;
 
+  /// Overrides the socket the tab opens, for widget tests (same role as
+  /// [apiClient]).
+  final ConsoleSocket Function(PterodactylApiClient apiClient, String serverIdentifier)? socketFactory;
+
   const ConsoleTab(
-      {super.key, required this.credentials, required this.server, required this.tabController, this.apiClient});
+      {super.key, required this.credentials, required this.server, required this.tabController, this.apiClient, this.socketFactory});
 
   @override
   State<ConsoleTab> createState() => _ConsoleTabState();
@@ -24,6 +28,7 @@ class _ConsoleTabState extends State<ConsoleTab> {
   late final PterodactylApiClient _api;
   ConsoleSocket? _socket;
   StreamSubscription<ConsoleEvent>? _subscription;
+  Timer? _retryCountdown; // ticks the banner's "Reconnecting in Ns" down once per second
   final _lines = <String>[];
   final _commandController = TextEditingController();
   final _scrollController = ScrollController();
@@ -43,6 +48,7 @@ class _ConsoleTabState extends State<ConsoleTab> {
   @override
   void dispose() {
     widget.tabController.removeListener(_onTabChanged);
+    _retryCountdown?.cancel();
     _subscription?.cancel();
     _socket?.dispose();
     _commandController.dispose();
@@ -64,7 +70,7 @@ class _ConsoleTabState extends State<ConsoleTab> {
       _connected = false;
       _error = null;
     });
-    final socket = ConsoleSocket(_api, widget.server.identifier);
+    final socket = widget.socketFactory?.call(_api, widget.server.identifier) ?? ConsoleSocket(_api, widget.server.identifier);
     _socket = socket;
     _subscription = socket.events.listen(_handleEvent);
     try {
@@ -86,6 +92,7 @@ class _ConsoleTabState extends State<ConsoleTab> {
     if (!mounted) return;
     switch (event) {
       case AuthSuccess():
+        _retryCountdown?.cancel();
         setState(() {
           _connecting = false;
           _connected = true;
@@ -103,6 +110,7 @@ class _ConsoleTabState extends State<ConsoleTab> {
         });
         _scrollToBottom();
       case SocketClosed():
+        _retryCountdown?.cancel();
         setState(() {
           _connecting = false;
           _connected = false;
@@ -110,9 +118,26 @@ class _ConsoleTabState extends State<ConsoleTab> {
         });
       case Reconnecting(:final delay):
         setState(() => _retryIn = delay);
+        _startCountdown();
       default:
         break;
     }
+  }
+
+  /// Ticks [_retryIn] down once per second until the socket reconnects (or
+  /// drops again, which schedules a new wait). Counts from elapsed periods
+  /// (`timer.tick`), so skipped callbacks can't leave stale text, and stops at
+  /// zero, where the socket's own retry may still be mid-handshake.
+  void _startCountdown() {
+    _retryCountdown?.cancel();
+    final start = _retryIn;
+    if (start == null) return;
+    _retryCountdown = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) return timer.cancel();
+      final left = start - Duration(seconds: timer.tick);
+      setState(() => _retryIn = left > Duration.zero ? left : Duration.zero);
+      if (left <= Duration.zero) timer.cancel();
+    });
   }
 
   void _scrollToBottom() {
@@ -132,6 +157,7 @@ class _ConsoleTabState extends State<ConsoleTab> {
 
   void _reconnect() {
     if (_connecting) return;
+    _retryCountdown?.cancel();
     _subscription?.cancel();
     _socket?.dispose();
     _socket = null;
