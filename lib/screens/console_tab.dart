@@ -125,13 +125,18 @@ class _ConsoleTabState extends State<ConsoleTab> {
   }
 
   /// Ticks [_retryIn] down once per second until the socket reconnects (or
-  /// drops again, which schedules a new wait). Stops on its own at zero, where
-  /// the socket's own retry may still be mid-handshake.
+  /// drops again, which schedules a new wait). Counts from elapsed periods
+  /// (`timer.tick`), so skipped callbacks can't leave stale text, and stops at
+  /// zero, where the socket's own retry may still be mid-handshake.
   void _startCountdown() {
     _retryCountdown?.cancel();
-    _retryCountdown = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted || _retryIn == null || _retryIn! <= Duration.zero) return;
-      setState(() => _retryIn = _retryIn! - const Duration(seconds: 1));
+    final start = _retryIn;
+    if (start == null) return;
+    _retryCountdown = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) return timer.cancel();
+      final left = start - Duration(seconds: timer.tick);
+      setState(() => _retryIn = left > Duration.zero ? left : Duration.zero);
+      if (left <= Duration.zero) timer.cancel();
     });
   }
 
