@@ -6,8 +6,33 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:pterodactyl_mobile/credentials.dart';
 import 'package:pterodactyl_mobile/api_client.dart';
+import 'package:pterodactyl_mobile/console_socket.dart';
 import 'package:pterodactyl_mobile/models.dart';
 import 'package:pterodactyl_mobile/screens/console_tab.dart';
+
+/// A console socket with no I/O behind it: the test drives its [events]
+/// directly, so widget tests never touch a real socket.
+class _StubSocket extends ConsoleSocket {
+  _StubSocket(super.apiClient, super.serverIdentifier);
+
+  final _events = StreamController<ConsoleEvent>.broadcast();
+
+  void emit(ConsoleEvent event) => _events.add(event);
+
+  @override
+  Stream<ConsoleEvent> get events => _events.stream;
+
+  @override
+  Future<void> connect() async {}
+
+  @override
+  Future<void> dispose() async {
+    await _events.close();
+  }
+
+  @override
+  void sendCommand(String command) {}
+}
 
 void main() {
   testWidgets('rapid reconnect taps do not dispose the new connection', (tester) async {
@@ -55,6 +80,59 @@ void main() {
     await tester.pump();
     expect(find.text('Could not connect to console'), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('the reconnect banner counts down once per second', (tester) async {
+    final api = PterodactylApiClient(
+      const Credentials(panelUrl: 'https://panel.example.com', apiKey: 'test-only'),
+      client: MockClient((_) async => http.Response('', 500)), // never called by the stub
+    );
+    final socket = _StubSocket(api, 'abc');
+    await tester.pumpWidget(MaterialApp(
+      home: DefaultTabController(
+        length: 2,
+        initialIndex: 1,
+        child: Builder(builder: (context) {
+          return Scaffold(
+            body: ConsoleTab(
+              credentials: const Credentials(panelUrl: 'https://panel.example.com', apiKey: 'test-only'),
+              apiClient: api,
+              server: const PteroServer(identifier: 'abc', name: 'Test'),
+              tabController: DefaultTabController.of(context),
+              socketFactory: (_, _) => socket,
+            ),
+          );
+        }),
+      ),
+    ));
+    await tester.pump(); // the stub connect() completes: connecting, spinner shown
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+    socket.emit(const AuthSuccess());
+    await tester.pump(); // delivers the event, schedules the frame
+    await tester.pump(); // renders the connected console
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+
+    // The panel drops the connection: the banner appears and ticks down.
+    socket.emit(const SocketClosed());
+    socket.emit(const Reconnecting(Duration(seconds: 4)));
+    await tester.pump(); // delivers the events, schedules the frame
+    await tester.pump(); // renders the banner
+    expect(find.textContaining('Reconnecting in 4s'), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.textContaining('Reconnecting in 3s'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.textContaining('Reconnecting in 2s'), findsOneWidget);
+
+    // The retry lands: the banner goes away and no stale tick brings it back.
+    socket.emit(const AuthSuccess());
+    await tester.pump(); // delivers the event, schedules the frame
+    await tester.pump(); // renders without the banner
+    expect(find.byType(MaterialBanner), findsNothing);
+    await tester.pump(const Duration(seconds: 5));
+    expect(find.byType(MaterialBanner), findsNothing);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
