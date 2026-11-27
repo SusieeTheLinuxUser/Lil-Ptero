@@ -23,24 +23,20 @@ Android will still stop the watcher to save power unless you allow it to run in 
 
 ## Status
 
-v0.1.2 shipped: server list, resource stats, power controls, live console, dark theme with accent presets, and per-ABI Android APKs. Android only for now. Background server-status notifications have landed on `main` and will ship in the next release.
+v0.1.4 shipped: server list, resource stats, power controls, live console, dark theme with accent presets, per-ABI Android APKs, and background server-status notifications (v0.1.3+). Android only for now.
 
 ## Getting started (development)
 
 1. Install the [Flutter SDK](https://docs.flutter.dev/get-started/install) (stable channel) and the Android SDK/toolchain (`flutter doctor` should report Android as ready).
-2. From this directory, generate the Android platform scaffold (only needs to be done once, it won't touch the existing `lib/`, `test/`, or `pubspec.yaml`):
-   ```bash
-   flutter create --platforms=android .
-   ```
-3. Fetch dependencies:
+2. Fetch dependencies:
    ```bash
    flutter pub get
    ```
-4. Run the unit tests:
+3. Run the unit tests:
    ```bash
    flutter test
    ```
-5. Run the app on a connected device or emulator:
+4. Run the app on a connected device or emulator:
    ```bash
    flutter run
    ```
