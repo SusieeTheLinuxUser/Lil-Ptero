@@ -32,4 +32,35 @@ void main() {
     machine.onDisconnected();
     expect(machine.state, ConsoleConnectionState.disconnected);
   });
+
+  test('an expiring token before authentication is ignored', () {
+    final machine = ConsoleStateMachine();
+    machine.onEvent(const TokenExpiring());
+    expect(machine.state, ConsoleConnectionState.connecting);
+    machine.onAuthSent();
+    expect(machine.state, ConsoleConnectionState.authenticating);
+    machine.onEvent(const TokenExpiring());
+    expect(machine.state, ConsoleConnectionState.authenticating);
+  });
+
+  test('a repeated expiry frame does not restart the refresh', () {
+    final machine = ConsoleStateMachine();
+    machine.onEvent(const AuthSuccess());
+    machine.onEvent(const TokenExpiring());
+    machine.onEvent(const TokenExpiring());
+    expect(machine.state, ConsoleConnectionState.refreshingToken);
+  });
+
+  test('a jwt error frame does not change the machine state', () {
+    final machine = ConsoleStateMachine();
+    machine.onEvent(const AuthSuccess());
+    machine.onEvent(const JwtError());
+    expect(machine.state, ConsoleConnectionState.authenticated);
+  });
+
+  test('token expired while still connecting disconnects', () {
+    final machine = ConsoleStateMachine();
+    machine.onEvent(const TokenExpired());
+    expect(machine.state, ConsoleConnectionState.disconnected);
+  });
 }

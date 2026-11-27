@@ -69,6 +69,32 @@ void main() {
     expect(requests, PterodactylApiClient.maxServerPages);
   });
 
+  test('a panel without pagination metadata stops after the first page', () async {
+    var requests = 0;
+    final api = PterodactylApiClient(credentials, client: MockClient((_) async {
+      requests++;
+      return http.Response('{"data":[{"attributes":{"identifier":"a","name":"A"}}]}', 200);
+    }));
+    addTearDown(api.close);
+
+    expect(await api.listServers(), hasLength(1));
+    expect(requests, 1);
+  });
+
+  test('a zero total_pages still returns the servers reported on page one', () async {
+    final api = PterodactylApiClient(credentials, client: MockClient((request) async {
+      expect(request.url.queryParameters['page'], '1');
+      return http.Response(
+        '{"data":[{"attributes":{"identifier":"a","name":"A"}}],'
+        '"meta":{"pagination":{"total_pages":0}}}',
+        200,
+      );
+    }));
+    addTearDown(api.close);
+
+    expect((await api.listServers()).single.name, 'A');
+  });
+
   test('never sends the API key to a plain http panel', () async {
     var sent = false;
     final api = PterodactylApiClient(

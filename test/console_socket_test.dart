@@ -15,6 +15,17 @@ void main() {
     expect(websocketHandshakeUri(Uri.parse('WSS://node.example.com:8080')).scheme, 'https');
   });
 
+  test('plain WS downgrades to HTTP for the websocket handshake', () {
+    expect(websocketHandshakeUri(Uri.parse('ws://node.example.com:8080')).scheme, 'http');
+  });
+
+  test('reconnect delays scale with the base and cap at 30 times it', () {
+    expect(
+      [for (var i = 0; i < 7; i++) reconnectDelay(i, base: const Duration(milliseconds: 500)).inMilliseconds],
+      [500, 1000, 2000, 4000, 8000, 15000, 15000],
+    );
+  });
+
   late HttpServer server;
   late ConsoleSocket console;
   late Future<WebSocket> peerFuture;
