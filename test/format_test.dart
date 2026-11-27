@@ -10,13 +10,30 @@ void main() {
     test('kilobytes', () => expect(formatBytes(1024), '1.0 KB'));
     test('megabytes', () => expect(formatBytes(1024 * 1024), '1.0 MB'));
     test('gigabytes', () => expect(formatBytes(1024 * 1024 * 1024), '1.0 GB'));
+    test('terabytes', () => expect(formatBytes(1024 * 1024 * 1024 * 1024), '1.0 TB'));
+    test('rounds up at the byte-to-kilobyte boundary', () {
+      expect(formatBytes(1024 * 1024 - 1), '1024.0 KB');
+    });
+    test('units cap at terabytes', () {
+      expect(formatBytes(1024 * 1024 * 1024 * 1024 * 1024), '1024.0 TB');
+    });
   });
 
   group('formatUptime', () {
+    test('zero', () => expect(formatUptime(Duration.zero), '0s'));
     test('seconds', () => expect(formatUptime(const Duration(seconds: 59)), '59s'));
     test('minutes', () => expect(formatUptime(const Duration(seconds: 60)), '1m 0s'));
     test('hours', () => expect(formatUptime(const Duration(minutes: 60)), '1h 0m'));
+    test('minutes are truncated inside the hour', () {
+      expect(formatUptime(const Duration(hours: 23, minutes: 59, seconds: 59)), '23h 59m');
+    });
     test('days', () => expect(formatUptime(const Duration(hours: 24)), '1d 0h'));
+    test('a day plus a second still shows whole hours', () {
+      expect(formatUptime(const Duration(days: 1, seconds: 1)), '1d 0h');
+    });
+    test('large uptimes keep counting days', () {
+      expect(formatUptime(const Duration(days: 366, hours: 5)), '366d 5h');
+    });
   });
 
   group('normalizePanelUrl', () {
@@ -32,6 +49,15 @@ void main() {
     });
     test('strips all trailing slashes', () {
       expect(normalizePanelUrl('panel.example.com//'), 'https://panel.example.com');
+    });
+    test('repairs a scheme with missing or doubled slashes', () {
+      expect(normalizePanelUrl('https:/panel.example.com'), 'https://panel.example.com');
+      expect(normalizePanelUrl('http:/panel.example.com'), 'http://panel.example.com');
+      expect(normalizePanelUrl('https:///panel.example.com'), 'https://panel.example.com');
+    });
+    test('treats a protocol-relative host as https', () {
+      expect(normalizePanelUrl('//panel.example.com'), 'https://panel.example.com');
+      expect(normalizePanelUrl('///panel.example.com'), 'https://panel.example.com');
     });
     test('trims surrounding whitespace', () {
       expect(normalizePanelUrl('  panel.example.com  '), 'https://panel.example.com');

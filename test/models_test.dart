@@ -57,6 +57,21 @@ void main() {
     });
   });
 
+  group('WebsocketDetails.fromJson', () {
+    test('parses the token and socket url out of the data wrapper', () {
+      final details = WebsocketDetails.fromJson({
+        'data': {'token': 'tok', 'socket': 'wss://node.example.com:8080/xyz'},
+      });
+      expect(details.token, 'tok');
+      expect(details.socketUrl, 'wss://node.example.com:8080/xyz');
+    });
+
+    test('a missing data wrapper or fields throws a TypeError', () {
+      expect(() => WebsocketDetails.fromJson({}), throwsA(isA<TypeError>()));
+      expect(() => WebsocketDetails.fromJson({'data': {}}), throwsA(isA<TypeError>()));
+    });
+  });
+
   group('ConsoleEvent.fromFrame', () {
     test('parses console output', () {
       final event = ConsoleEvent.fromFrame({
@@ -65,6 +80,30 @@ void main() {
       });
       expect(event, isA<ConsoleOutput>());
       expect((event as ConsoleOutput).line, 'hello');
+    });
+
+    test('console output with no args is an empty line', () {
+      final event = ConsoleEvent.fromFrame({'event': 'console output'});
+      expect((event as ConsoleOutput).line, '');
+    });
+
+    test('stats payloads keep their raw json and empty args fall back to {}', () {
+      expect(
+        (ConsoleEvent.fromFrame({'event': 'stats', 'args': ['{"cpu":1}']}) as StatsUpdate).rawJson,
+        '{"cpu":1}',
+      );
+      expect((ConsoleEvent.fromFrame({'event': 'stats'}) as StatsUpdate).rawJson, '{}');
+    });
+
+    test('status with missing or unrecognized args is unknown', () {
+      expect(
+        (ConsoleEvent.fromFrame({'event': 'status', 'args': []}) as StatusChanged).state,
+        ServerState.unknown,
+      );
+      expect(
+        (ConsoleEvent.fromFrame({'event': 'status', 'args': ['hibernating']}) as StatusChanged).state,
+        ServerState.unknown,
+      );
     });
 
     test('parses token lifecycle events', () {
@@ -77,6 +116,18 @@ void main() {
       final event = ConsoleEvent.fromFrame({'event': 'mystery', 'args': []});
       expect(event, isA<UnknownEvent>());
       expect((event as UnknownEvent).event, 'mystery');
+    });
+  });
+
+  group('parseServerState', () {
+    test('known names map to their state, anything else is unknown', () {
+      expect(parseServerState('running'), ServerState.running);
+      expect(parseServerState('starting'), ServerState.starting);
+      expect(parseServerState('stopping'), ServerState.stopping);
+      expect(parseServerState('offline'), ServerState.offline);
+      expect(parseServerState('installing'), ServerState.unknown);
+      expect(parseServerState(''), ServerState.unknown);
+      expect(parseServerState(null), ServerState.unknown);
     });
   });
 }

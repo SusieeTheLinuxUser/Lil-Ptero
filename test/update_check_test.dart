@@ -26,6 +26,10 @@ void main() {
     test('a longer candidate wins on its extra segment', () {
       expect(isNewerVersion('0.1.1', '0.1'), isTrue);
     });
+    test('a shorter candidate and zero padding never read as newer', () {
+      expect(isNewerVersion('0.1', '0.1.4'), isFalse);
+      expect(isNewerVersion('0.1.4.0', '0.1.4'), isFalse);
+    });
   });
 
   group('versionFromGithubLocation', () {
@@ -70,6 +74,10 @@ void main() {
       const body =
           '{"suggestedVersionCode":5,"packages":[{"versionName":"0.2.0-beta","versionCode":6},{"versionName":"0.1.4","versionCode":5}]}';
       expect(fdroidLatestVersionName(body), '0.1.4');
+    });
+    test('a missing suggestedVersionCode falls back to the first package', () {
+      const body = '{"packages":[{"versionName":"0.2.0","versionCode":9}]}';
+      expect(fdroidLatestVersionName(body), '0.2.0');
     });
     test('missing fields -> null', () {
       const body = '{"packageName":"dev.susiee.lilptero","packages":[]}';
