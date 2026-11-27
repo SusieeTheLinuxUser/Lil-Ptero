@@ -1,7 +1,17 @@
 /// Defaults to https:// when the input omits a scheme (e.g. "panel.example.com").
 String normalizePanelUrl(String raw) {
   var url = raw.trim();
-  if (!url.contains('://')) url = 'https://$url';
+  // A scheme with missing or doubled slashes ("https:/host", "https:///host")
+  // has no "://" and would otherwise be prefixed again into an unusable URL.
+  url = url.replaceFirstMapped(
+    RegExp(r'^(https?):/+(?!/)', caseSensitive: false),
+    (match) => '${match.group(1)!}://',
+  );
+  if (!url.contains('://')) {
+    // Plain host, or protocol-relative ("//host") — strip any leading slashes
+    // so the prefix can't end up with an empty host.
+    url = 'https://${url.replaceFirst(RegExp(r'^/+'), '')}';
+  }
   url = url.replaceFirst(RegExp(r'/+$'), '');
   return url;
 }

@@ -33,6 +33,15 @@ void main() {
     test('strips all trailing slashes', () {
       expect(normalizePanelUrl('panel.example.com//'), 'https://panel.example.com');
     });
+    test('repairs a scheme with missing or doubled slashes', () {
+      expect(normalizePanelUrl('https:/panel.example.com'), 'https://panel.example.com');
+      expect(normalizePanelUrl('http:/panel.example.com'), 'http://panel.example.com');
+      expect(normalizePanelUrl('https:///panel.example.com'), 'https://panel.example.com');
+    });
+    test('treats a protocol-relative host as https', () {
+      expect(normalizePanelUrl('//panel.example.com'), 'https://panel.example.com');
+      expect(normalizePanelUrl('///panel.example.com'), 'https://panel.example.com');
+    });
     test('trims surrounding whitespace', () {
       expect(normalizePanelUrl('  panel.example.com  '), 'https://panel.example.com');
     });
