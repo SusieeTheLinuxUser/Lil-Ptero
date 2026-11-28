@@ -12,19 +12,26 @@ class ResourceGauge extends StatelessWidget {
     final clamped = value.isFinite ? value.clamp(0.0, 1.0) : 0.0;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [Text(label), Text(valueLabel)],
+      // One node that reads as "CPU 42.0%" instead of a bare number for the
+      // bar and two loose texts.
+      child: Semantics(
+        label: '$label $valueLabel',
+        child: ExcludeSemantics(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [Text(label), Text(valueLabel)],
+              ),
+              const SizedBox(height: 4),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(value: clamped, minHeight: 8),
+              ),
+            ],
           ),
-          const SizedBox(height: 4),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(value: clamped, minHeight: 8),
-          ),
-        ],
+        ),
       ),
     );
   }
