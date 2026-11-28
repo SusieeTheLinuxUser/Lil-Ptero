@@ -156,7 +156,7 @@ Each of these looks redundant or odd and isn't. All came out of real bugs (see `
 - **Semantics labels** on the console command field and send button (`lib/screens/console_tab.dart:211`, `:221-224`), the resource gauges (`lib/widgets/resource_gauge.dart:17-19`), and the server-list settings button — TalkBack reads "CPU 42.0%" instead of a bare number; covered by `test/semantics_test.dart` (`7569afa`, `d6b03f4`, `de8633a`, `1820d54`).
 - **The background monitor skips a tick while the previous poll runs and clears its state baseline once per run** ([lib/background_monitor.dart](lib/background_monitor.dart) :43-47, :54-57): alerts fire only on stops the run actually sees, never for a stop that happened while nothing was watching.
 
-
+## The Pterodactyl Client API (what this app talks to)
 
 Base path: `{panel_url}/api/client`, header `Authorization: Bearer {api_key}`, `Accept: application/json`. The user supplies their own panel URL + a personal **Client** API key (not an Application/admin key) — see [lib/api_client.dart](lib/api_client.dart) for everything currently implemented:
 
