@@ -109,7 +109,7 @@ void main() {
     expect(sent, isFalse);
   });
 
-  for (final status in [302, 401, 403, 500]) {
+  for (final status in [302, 401, 403, 404, 409, 429, 500, 502, 503]) {
     test('HTTP $status becomes an ApiException before parsing the body', () async {
       await expectLater(
         clientFor(http.Response('<html>Error</html>', status)).listServers(),
@@ -126,6 +126,17 @@ void main() {
       );
     });
   }
+
+  test('an out-of-range number in the payload becomes a safe ApiException', () async {
+    // jsonDecode maps 1e999 to infinity, so num.toInt() throws
+    // UnsupportedError — not the TypeError the other junk payloads produce.
+    await expectLater(
+      clientFor(http.Response(
+          '{"data":[{"attributes":{"identifier":"a","name":"A","limits":{"memory":1e999}}}]}', 200))
+          .listServers(),
+      throwsA(isA<ApiException>().having((e) => e.message, 'message', 'Invalid response from panel')),
+    );
+  });
 
   test('all GET endpoints wrap invalid payload types', () async {
     final api = clientFor(http.Response('{"attributes":[],"data":[]}', 200));

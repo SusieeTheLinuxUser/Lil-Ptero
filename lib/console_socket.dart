@@ -213,11 +213,16 @@ class ConsoleSocket {
   }
 
   Future<void> _refreshToken() async {
+    final socket = _socket;
     try {
       final details = await apiClient.getWebsocketDetails(serverIdentifier);
-      if (_disposed || state == ConsoleConnectionState.disconnected) return;
+      // The connection this refresh belonged to can drop and be replaced
+      // while the lookup is in flight; a stale answer must neither re-auth
+      // nor close the current one.
+      if (_disposed || socket == null || socket != _socket) return;
       _sendAuth(details.token);
     } catch (e) {
+      if (_disposed || socket == null || socket != _socket) return;
       if (_isAuthError(e)) _authRejected = true;
       _handleClosed();
     }

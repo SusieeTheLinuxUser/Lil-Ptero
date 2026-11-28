@@ -11,7 +11,12 @@ import '../widgets/resource_gauge.dart';
 class OverviewTab extends StatefulWidget {
   final Credentials credentials;
   final PteroServer server;
-  const OverviewTab({super.key, required this.credentials, required this.server});
+
+  /// Overrides the API client the tab polls, for widget tests (same role as
+  /// the console tab's).
+  final PterodactylApiClient? apiClient;
+  const OverviewTab(
+      {super.key, required this.credentials, required this.server, this.apiClient});
 
   @override
   State<OverviewTab> createState() => _OverviewTabState();
@@ -28,7 +33,7 @@ class _OverviewTabState extends State<OverviewTab> {
   @override
   void initState() {
     super.initState();
-    _api = PterodactylApiClient(widget.credentials);
+    _api = widget.apiClient ?? PterodactylApiClient(widget.credentials);
     _poll();
     _timer = Timer.periodic(const Duration(seconds: 4), (_) => _poll());
   }
@@ -97,9 +102,12 @@ class _OverviewTabState extends State<OverviewTab> {
             padding: const EdgeInsets.only(bottom: 16),
             child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
           ),
-        if (resources == null)
+        // No spinner next to an error: a server the panel refuses (e.g.
+        // suspended) would otherwise spin forever under the error text and
+        // look hung, when the poll underneath is what keeps retrying.
+        if (resources == null && _error == null)
           const Center(child: CircularProgressIndicator())
-        else ...[
+        else if (resources != null) ...[
           Chip(label: Text(resources.currentState.name.toUpperCase())),
           const SizedBox(height: 16),
           ResourceGauge(

@@ -23,6 +23,11 @@ void main() {
       expect(isNewerVersion('0.1.x', '0.1.3'), isFalse);
       expect(isNewerVersion('', '0.1.3'), isFalse);
     });
+    test('prerelease and build tags are never newer, with or without a v prefix', () {
+      expect(isNewerVersion('0.2.0-beta', '0.1.3'), isFalse);
+      expect(isNewerVersion('0.1.4+build.7', '0.1.3'), isFalse);
+      expect(isNewerVersion('v0.2.0', '0.1.3'), isFalse);
+    });
     test('a longer candidate wins on its extra segment', () {
       expect(isNewerVersion('0.1.1', '0.1'), isTrue);
     });
@@ -45,6 +50,9 @@ void main() {
       expect(versionFromGithubLocation('${_tagUrl}vlatest'), isNull);
       expect(versionFromGithubLocation('${_tagUrl}v0.1.x'), isNull);
       expect(versionFromGithubLocation('${_tagUrl}vnot.a.version'), isNull);
+    });
+    test('prerelease tags are rejected too', () {
+      expect(versionFromGithubLocation('${_tagUrl}v0.2.0-beta'), isNull);
     });
   });
 

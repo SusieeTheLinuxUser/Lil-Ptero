@@ -36,9 +36,15 @@ class _ServerListScreenState extends State<ServerListScreen> {
   }
 
   Future<void> _refresh() async {
-    setState(() => _future = _client.listServers());
+    // Capture the new request before setState. The closure must be a block:
+    // an assignment expression (`() => _future = f`) returns the assigned
+    // value, and a Future from setState triggers a framework assertion.
+    final future = _client.listServers();
+    setState(() {
+      _future = future;
+    });
     try {
-      await _future;
+      await future;
     } catch (_) {
       // FutureBuilder already renders the error; don't rethrow into onRefresh.
     }
@@ -70,17 +76,32 @@ class _ServerListScreenState extends State<ServerListScreen> {
             if (snapshot.hasError) {
               final message =
                   snapshot.error is ApiException ? (snapshot.error as ApiException).message : 'Something went wrong';
+              // Always scrollable: a short list can't be dragged on Android,
+              // which would make pull to refresh — and the retry — dead.
               return ListView(
-                children: [const SizedBox(height: 80), Center(child: Text(message))],
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  const SizedBox(height: 80),
+                  Center(child: Text(message)),
+                  const SizedBox(height: 16),
+                  Center(
+                    child: TextButton(
+                      onPressed: _refresh,
+                      child: const Text('Retry'),
+                    ),
+                  ),
+                ],
               );
             }
             final servers = snapshot.data!;
             if (servers.isEmpty) {
               return ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
                 children: const [SizedBox(height: 80), Center(child: Text('No servers found'))],
               );
             }
             return ListView.builder(
+              physics: const AlwaysScrollableScrollPhysics(),
               itemCount: servers.length,
               itemBuilder: (context, index) {
                 final server = servers[index];
