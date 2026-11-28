@@ -222,8 +222,8 @@ class ConsoleSocket {
       if (_disposed || socket == null || socket != _socket) return;
       _sendAuth(details.token);
     } catch (e) {
-      if (_isAuthError(e)) _authRejected = true;
       if (_disposed || socket == null || socket != _socket) return;
+      if (_isAuthError(e)) _authRejected = true;
       _handleClosed();
     }
   }

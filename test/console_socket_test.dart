@@ -479,5 +479,20 @@ void main() {
       expect(socket.state, ConsoleConnectionState.authenticated);
       expect(peer2.close(), completes);
     });
+
+    test('a stale auth failure does not stop later reconnects', () async {
+      final events = <ConsoleEvent>[];
+      final subscription = socket.events.listen(events.add);
+      addTearDown(subscription.cancel);
+      final (peer2, _) = await dropAndReconnect();
+
+      refreshGate.complete(http.Response('denied', 403)); // the old refresh is refused
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await peer2.close(); // now the new connection drops
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(events.whereType<Reconnecting>(), hasLength(2),
+          reason: 'the stale 403 belonged to the old socket, so the new one still reconnects');
+    });
   });
 }
