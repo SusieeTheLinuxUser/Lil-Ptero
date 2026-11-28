@@ -10,10 +10,10 @@ Connect with your panel URL and a personal Client API key (generated in your Pte
 
 - See your servers and their live resource usage (CPU, memory, disk)
 - Start / restart / stop / kill a server (stop, restart and kill ask first)
-- Watch the live console and send commands; it reconnects on its own if the connection drops
+- Watch the live console and send commands; it reconnects on its own if the connection drops while the server is running (after a server stop, tap Reconnect once it is back)
 - Pull to refresh the server list; a failed load gets a Retry button
 - Get a notification when a server stops or crashes, even with the app closed (opt-in, in Settings)
-- Get a banner when a newer version is out — checked at most once a day (opt-out in Settings)
+- Get a banner when a newer version is out — checked about once a day (opt-out in Settings)
 
 No account with us, no backend of ours in the middle — the app talks directly to your panel's API.
 
