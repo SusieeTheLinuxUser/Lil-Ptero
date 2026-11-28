@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../api_client.dart';
 import '../credentials.dart';
 import '../models.dart';
 import 'console_tab.dart';
@@ -8,7 +9,12 @@ import 'overview_tab.dart';
 class ServerDetailScreen extends StatefulWidget {
   final Credentials credentials;
   final PteroServer server;
-  const ServerDetailScreen({super.key, required this.credentials, required this.server});
+
+  /// Overrides the API client both tabs use, for widget tests (same role as
+  /// the console tab's).
+  final PterodactylApiClient? apiClient;
+  const ServerDetailScreen(
+      {super.key, required this.credentials, required this.server, this.apiClient});
 
   @override
   State<ServerDetailScreen> createState() => _ServerDetailScreenState();
@@ -42,8 +48,12 @@ class _ServerDetailScreenState extends State<ServerDetailScreen> with SingleTick
       body: TabBarView(
         controller: _tabController,
         children: [
-          OverviewTab(credentials: widget.credentials, server: widget.server),
-          ConsoleTab(credentials: widget.credentials, server: widget.server, tabController: _tabController),
+          OverviewTab(credentials: widget.credentials, server: widget.server, apiClient: widget.apiClient),
+          ConsoleTab(
+              credentials: widget.credentials,
+              server: widget.server,
+              tabController: _tabController,
+              apiClient: widget.apiClient),
         ],
       ),
     );
