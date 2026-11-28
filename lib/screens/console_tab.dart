@@ -205,14 +205,24 @@ class _ConsoleTabState extends State<ConsoleTab> {
           child: Row(
             children: [
               Expanded(
-                child: TextField(
-                  controller: _commandController,
-                  decoration: const InputDecoration(hintText: 'Enter command', border: OutlineInputBorder()),
-                  enabled: _connected,
-                  onSubmitted: (_) => _send(),
+                // labelText would float a visual label; this gives TalkBack a
+                // name without changing the look. The hint stays for sighted
+                // users.
+                child: Semantics(
+                  label: 'Console command',
+                  child: TextField(
+                    controller: _commandController,
+                    decoration: const InputDecoration(hintText: 'Enter command', border: OutlineInputBorder()),
+                    enabled: _connected,
+                    onSubmitted: (_) => _send(),
+                  ),
                 ),
               ),
-              IconButton(icon: const Icon(Icons.send), onPressed: _connected ? _send : null),
+              IconButton(
+                icon: const Icon(Icons.send),
+                tooltip: 'Send command',
+                onPressed: _connected ? _send : null,
+              ),
             ],
           ),
         ),

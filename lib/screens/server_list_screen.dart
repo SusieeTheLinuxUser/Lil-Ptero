@@ -8,7 +8,11 @@ import 'settings_screen.dart';
 
 class ServerListScreen extends StatefulWidget {
   final Credentials credentials;
-  const ServerListScreen({super.key, required this.credentials});
+
+  /// Overrides the API client the screen polls, for widget tests (same role
+  /// as the console tab's apiClient).
+  final PterodactylApiClient? apiClient;
+  const ServerListScreen({super.key, required this.credentials, this.apiClient});
 
   @override
   State<ServerListScreen> createState() => _ServerListScreenState();
@@ -21,7 +25,7 @@ class _ServerListScreenState extends State<ServerListScreen> {
   @override
   void initState() {
     super.initState();
-    _client = PterodactylApiClient(widget.credentials);
+    _client = widget.apiClient ?? PterodactylApiClient(widget.credentials);
     _future = _client.listServers();
   }
 
@@ -48,6 +52,7 @@ class _ServerListScreenState extends State<ServerListScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
+            tooltip: 'Settings',
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => SettingsScreen(credentials: widget.credentials)),
             ),
