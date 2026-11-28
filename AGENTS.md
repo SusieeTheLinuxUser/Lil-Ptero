@@ -9,7 +9,7 @@ F-Droid distribution goes through our own repo (see "Own F-Droid repo" under Rel
 - `dev` is the default branch. Branch from `origin/dev` and open PRs into `dev` (`gh pr create --base dev`).
 - `main` is prod: `v*.*.*` tags on it build the signed release, which the F-Droid repo picks up. A release is a PR from `dev` into `main`, merged with a merge commit.
 - Both branches are protected by the ruleset "Protect dev and prod": no deletion, no force push, changes only through a PR, and CI `analyze-and-test` must pass.
-- Nothing else lives on GitHub: delete a branch once its PR is merged (`gh pr merge --delete-branch`).
+- Nothing else lives on GitHub: delete a feature branch once its PR is merged (`gh pr merge --delete-branch`). Never pass `--delete-branch` on a release PR (`dev` into prod): its head branch is `dev`.
 
 ## What this is
 
