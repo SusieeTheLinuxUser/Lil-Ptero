@@ -50,6 +50,7 @@ class _SetupScreenState extends State<SetupScreen> {
 
     final url = normalizePanelUrl(_urlController.text);
     final credentials = Credentials(panelUrl: url, apiKey: _keyController.text.trim());
+    final ownClient = widget.apiClient == null;
     final client = widget.apiClient ?? PterodactylApiClient(credentials);
     try {
       await client.listServers();
@@ -65,7 +66,8 @@ class _SetupScreenState extends State<SetupScreen> {
         setState(() => _error = "Couldn't save your login on this phone. Please try again.");
       }
     } finally {
-      client.close();
+      if (ownClient) client.close(); // an injected client goes on to the server list
+
       if (mounted) setState(() => _loading = false);
     }
   }
