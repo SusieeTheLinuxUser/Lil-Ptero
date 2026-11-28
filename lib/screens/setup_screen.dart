@@ -6,8 +6,13 @@ import '../format.dart';
 import 'server_list_screen.dart';
 
 class SetupScreen extends StatefulWidget {
-  const SetupScreen({super.key, this.notice});
+  const SetupScreen({super.key, this.notice, this.apiClient});
   final String? notice;
+
+  /// Overrides the API client used to verify the login, for widget tests
+  /// (same role as the console tab's). Passed on to the server list so the
+  /// hand-off after a successful setup stays mocked too.
+  final PterodactylApiClient? apiClient;
 
   @override
   State<SetupScreen> createState() => _SetupScreenState();
@@ -45,13 +50,13 @@ class _SetupScreenState extends State<SetupScreen> {
 
     final url = normalizePanelUrl(_urlController.text);
     final credentials = Credentials(panelUrl: url, apiKey: _keyController.text.trim());
-    final client = PterodactylApiClient(credentials);
+    final client = widget.apiClient ?? PterodactylApiClient(credentials);
     try {
       await client.listServers();
       await Credentials.save(credentials);
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => ServerListScreen(credentials: credentials)),
+        MaterialPageRoute(builder: (_) => ServerListScreen(credentials: credentials, apiClient: widget.apiClient)),
       );
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
