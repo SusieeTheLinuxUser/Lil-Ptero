@@ -25,7 +25,7 @@ This project is deliberately minimal. Before adding a dependency or an abstracti
 - Plain `Navigator.push`/`MaterialPageRoute` — no `go_router` (the flow is linear, no deep links).
 - Hand-rolled `formatBytes`/`formatUptime` in [lib/format.dart](lib/format.dart) — no `intl`.
 
-Keep following this pattern: reach for the SDK/stdlib/native feature first, and only add a package when there's a genuine gap. Today that's five: `http`, `crypto` and `flutter_secure_storage`, plus `flutter_local_notifications` and `flutter_background_service` for the background monitor (Dart has no way to post an Android notification or run a foreground service on its own). The one-off "ignore battery optimizations" Intent is a ~15-line platform channel in [MainActivity.kt](android/app/src/main/kotlin/dev/susiee/lilptero/MainActivity.kt) rather than another package — prefer that trade when a plugin would exist solely to fire one Intent.
+Keep following this pattern: reach for the SDK/stdlib/native feature first, and only add a package when there's a genuine gap. Today that's five: `http`, `crypto` and `flutter_secure_storage`, plus `flutter_local_notifications` and `flutter_background_service` for the background monitor (Dart has no way to post an Android notification or run a foreground service on its own). The one-off "ignore battery optimizations" Intent is a ~15-line platform channel in [MainActivity.kt](android/app/src/main/kotlin/dev/susiee/lilptero/MainActivity.kt) rather than another package — prefer that trade when a plugin would exist solely to fire one Intent. MainActivity.kt also answers the `dev.susiee.lilptero/install_info` channel (which app installed us, so an F-Droid install asks F-Droid for updates and never GitHub — consumed by [lib/update_prefs.dart](lib/update_prefs.dart)). Still no plugin for either.
 
 `flutter_local_notifications` requires Java core-library desugaring, which is why `isCoreLibraryDesugaringEnabled` and the `desugar_jdk_libs` dependency are in [android/app/build.gradle.kts](android/app/build.gradle.kts). Don't remove them.
 
@@ -108,7 +108,7 @@ Known local gotcha: if your default JDK is very new (e.g. 21+), the Android Grad
 
 **Always run `flutter analyze` and `flutter test` before considering a change done.** Every non-trivial piece of logic (a branch, a parser, the console state machine) should leave a runnable test behind — see `test/console_state_test.dart` for the pattern (script a sequence of events through a pure state machine, assert the resulting state, no real socket).
 
-`.github/workflows/ci.yml` runs both on every PR and on pushes to `main`; `dev` and `main` are protected and require that check to pass (see Branches). Automated tests cover pure logic, mocked HTTP, loopback WebSockets, and widget behavior; Android services, notifications, and background isolates still **must** be verified on a real device (see the adb recipes above).
+`.github/workflows/ci.yml` runs analyze, tests and a debug-APK build on every PR and on pushes to `main`; `dev` and `main` are protected and require that check to pass (see Branches). Automated tests cover pure logic, mocked HTTP, loopback WebSockets, and widget behavior; Android services, notifications, and background isolates still **must** be verified on a real device (see the adb recipes above).
 
 ### API and console reliability validation (2026-09-26)
 
@@ -129,7 +129,7 @@ Known local gotcha: if your default JDK is very new (e.g. 21+), the Android Grad
 
 ### Bug hunt notes (2026-11-08)
 
-- The monitor's foreground service type is `specialUse` (permission `FOREGROUND_SERVICE_SPECIAL_USE`), not `dataSync`. The app targets SDK 36, and Android 15 caps `dataSync` at 6 h per day (the plugin has no `onTimeout`, so the app would crash) and forbids starting it from `BOOT_COMPLETED`. The plugin passes `FOREGROUND_SERVICE_TYPE_MANIFEST`, so the manifest alone decides. Needs a device check: monitor still alive after a reboot and after 6+ h.
+- The monitor's foreground service type is `specialUse` (permission `FOREGROUND_SERVICE_SPECIAL_USE`), not `dataSync`. The app targets SDK 36 (compileSdk 37 since flutter_local_notifications 23, see [android/app/build.gradle.kts](android/app/build.gradle.kts)), and Android 15 caps `dataSync` at 6 h per day (the plugin has no `onTimeout`, so the app would crash) and forbids starting it from `BOOT_COMPLETED`. The plugin passes `FOREGROUND_SERVICE_TYPE_MANIFEST`, so the manifest alone decides. Needs a device check: monitor still alive after a reboot and after 6+ h.
 - POST_NOTIFICATIONS is requested only when the user turns the monitor on (`NotificationPrefs.setEnabled(true)`), not on every launch. If it's denied, the toggle stays off and Settings shows a SnackBar. Covered by `test/notification_prefs_test.dart`.
 - `_pollOnce` throws when there are no saved credentials, so the persistent notification says "Check failed" rather than a misleading "Last checked".
 - The console's "disconnected" banner waits for the first connect attempt (`_socket != null`), so a swipe into the tab doesn't flash it.
