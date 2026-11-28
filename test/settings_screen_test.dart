@@ -108,6 +108,7 @@ void main() {
     expect(ThemePrefs.accent.value, AccentPreset.purple);
 
     // Simulate an app restart: reload the prefs, then build a fresh screen.
+    ThemePrefs.accent.value = AccentPreset.green; // forget the tap, so only load() can bring purple back
     await ThemePrefs.load();
     await pumpSettings(tester);
     expect(ThemePrefs.accent.value, AccentPreset.purple);
@@ -123,6 +124,7 @@ void main() {
     expect(store['update_check_enabled'], 'false');
     expect(UpdatePrefs.enabled.value, isFalse);
 
+    UpdatePrefs.enabled.value = true; // forget the tap, so only load() can turn it off again
     await UpdatePrefs.load(); // simulate an app restart
     await pumpSettings(tester);
     expect(UpdatePrefs.enabled.value, isFalse);
