@@ -364,4 +364,120 @@ void main() {
       expect(connections, 1);
     });
   });
+
+  group('token refresh finishing after a reconnect', () {
+    // The shared harness above blocks every lookup after the first on one
+    // completer; these tests need the refresh (request 2) to stay in flight
+    // while the reconnect's own lookup (request 3) answers immediately.
+    late HttpServer server;
+    late ConsoleSocket socket;
+    late List<WebSocket> peers; // every accepted socket, in order
+    late Completer<http.Response> refreshGate;
+    late Completer<void> refreshArrived;
+    var requests = 0;
+
+    String details(String token) => jsonEncode({
+          'data': {'token': token, 'socket': 'ws://127.0.0.1:${server.port}'},
+        });
+
+    setUp(() async {
+      server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      peers = [];
+      final upgraded = StreamController<WebSocket>.broadcast();
+      upgraded.stream.listen(peers.add); // subscribed before any handshake
+      addTearDown(upgraded.close);
+      server.listen((request) async {
+        upgraded.add(await WebSocketTransformer.upgrade(request));
+      });
+      refreshGate = Completer<http.Response>();
+      refreshArrived = Completer<void>();
+      requests = 0;
+      final api = PterodactylApiClient(
+        const Credentials(panelUrl: 'https://panel.example.com', apiKey: 'test-only'),
+        client: MockClient((_) async {
+          requests++;
+          if (requests == 1) return http.Response(details('token-1'), 200);
+          if (requests == 2) {
+            refreshArrived.complete();
+            return refreshGate.future; // the token refresh stays in flight
+          }
+          return http.Response(details('token-2'), 200); // the reconnect's fresh lookup
+        }),
+      );
+      socket = ConsoleSocket(api, 'abc', retryBase: const Duration(milliseconds: 10));
+      addTearDown(() async {
+        await socket.dispose();
+        api.close();
+        await server.close(force: true);
+      });
+    });
+
+    Future<WebSocket> accepted(int index) async {
+      while (peers.length <= index) {
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+      }
+      return peers[index];
+    }
+
+    /// Connects, authenticates on connection 1, starts a token refresh whose
+    /// answer is held back, drops the connection and lets the socket
+    /// reconnect and re-authenticate on connection 2. Returns the new peer.
+    Future<(WebSocket, StreamIterator<dynamic>)> dropAndReconnect() async {
+      await socket.connect();
+      final peer1 = await accepted(0);
+      final frames1 = StreamIterator(peer1);
+      addTearDown(frames1.cancel);
+      expect(await frames1.moveNext(), isTrue);
+      expect(jsonDecode(frames1.current as String)['args'], ['token-1']);
+      final firstAuth = socket.events.firstWhere((event) => event is AuthSuccess);
+      peer1.add('{"event":"auth success"}');
+      await firstAuth;
+
+      peer1.add('{"event":"token expiring"}');
+      await refreshArrived.future; // refresh (request 2) now in flight
+
+      final secondAuth = socket.events.where((event) => event is AuthSuccess).first;
+      await peer1.close(); // the panel drops the connection mid-refresh
+      final peer2 = await accepted(1);
+      final frames2 = StreamIterator(peer2);
+      addTearDown(frames2.cancel);
+      expect(await frames2.moveNext(), isTrue);
+      expect(jsonDecode(frames2.current as String)['args'], ['token-2']);
+      peer2.add('{"event":"auth success"}');
+      await secondAuth;
+      return (peer2, frames2);
+    }
+
+    test('a stale answer does not re-auth the reconnected socket', () async {
+      final events = <ConsoleEvent>[];
+      final subscription = socket.events.listen(events.add);
+      addTearDown(subscription.cancel);
+      final (peer2, frames2) = await dropAndReconnect();
+
+      refreshGate.complete(http.Response(details('token-1'), 200)); // the old refresh lands
+      final staleFrame =
+          await frames2.moveNext().timeout(const Duration(seconds: 2), onTimeout: () => false);
+
+      expect(staleFrame, isFalse, reason: 'a stale token must not re-auth the new socket');
+      expect(socket.state, ConsoleConnectionState.authenticated);
+      expect(events.whereType<SocketClosed>(), hasLength(1));
+      expect(peer2.close(), completes);
+    });
+
+    test('a stale failure does not close the reconnected socket', () async {
+      final events = <ConsoleEvent>[];
+      final subscription = socket.events.listen(events.add);
+      addTearDown(subscription.cancel);
+      final (peer2, _) = await dropAndReconnect();
+
+      refreshGate.complete(http.Response('boom', 500)); // the old refresh fails
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(events.whereType<SocketClosed>(), hasLength(1),
+          reason: 'only the original drop, not the stale refresh failure');
+      expect(events.whereType<Reconnecting>(), hasLength(1));
+      expect(socket.state, ConsoleConnectionState.authenticated);
+      expect(peer2.close(), completes);
+    });
+  });
 }
