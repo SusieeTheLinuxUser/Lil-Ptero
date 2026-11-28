@@ -9,9 +9,11 @@ A free, open-source Android app for viewing and controlling Minecraft servers ho
 Connect with your panel URL and a personal Client API key (generated in your Pterodactyl account settings), then:
 
 - See your servers and their live resource usage (CPU, memory, disk)
-- Start / restart / stop / kill a server
-- Watch the live console and send commands
+- Start / restart / stop / kill a server (stop, restart and kill ask first)
+- Watch the live console and send commands; it reconnects on its own if the connection drops while the server is running (after a server stop, tap Reconnect once it is back)
+- Pull to refresh the server list; a failed load gets a Retry button
 - Get a notification when a server stops or crashes, even with the app closed (opt-in, in Settings)
+- Get a banner when a newer version is out — checked about once a day (opt-out in Settings)
 
 No account with us, no backend of ours in the middle — the app talks directly to your panel's API.
 
@@ -23,7 +25,7 @@ Android will still stop the watcher to save power unless you allow it to run in 
 
 ## Status
 
-v0.1.4 shipped: server list, resource stats, power controls, live console, dark theme with accent presets, per-ABI Android APKs, and background server-status notifications (v0.1.3+). Android only for now.
+v0.1.4 shipped: server list, resource stats, power controls, live console, dark theme with accent presets, per-ABI Android APKs, background server-status notifications (v0.1.3+), and the check-for-updates banner. In `dev` since v0.1.4, next release: pull-to-refresh with a Retry button, a console that reconnects on its own, and screen-reader labels. Android only for now.
 
 ## Getting started (development)
 
