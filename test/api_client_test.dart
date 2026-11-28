@@ -109,7 +109,7 @@ void main() {
     expect(sent, isFalse);
   });
 
-  for (final status in [302, 401, 403, 500]) {
+  for (final status in [302, 401, 403, 404, 409, 429, 500, 502, 503]) {
     test('HTTP $status becomes an ApiException before parsing the body', () async {
       await expectLater(
         clientFor(http.Response('<html>Error</html>', status)).listServers(),
