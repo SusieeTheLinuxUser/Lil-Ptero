@@ -127,6 +127,17 @@ void main() {
     });
   }
 
+  test('an out-of-range number in the payload becomes a safe ApiException', () async {
+    // jsonDecode maps 1e999 to infinity, so num.toInt() throws
+    // UnsupportedError — not the TypeError the other junk payloads produce.
+    await expectLater(
+      clientFor(http.Response(
+          '{"data":[{"attributes":{"identifier":"a","name":"A","limits":{"memory":1e999}}}]}', 200))
+          .listServers(),
+      throwsA(isA<ApiException>().having((e) => e.message, 'message', 'Invalid response from panel')),
+    );
+  });
+
   test('all GET endpoints wrap invalid payload types', () async {
     final api = clientFor(http.Response('{"attributes":[],"data":[]}', 200));
     for (final request in [api.getServer, api.getResources, api.getWebsocketDetails]) {

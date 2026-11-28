@@ -45,6 +45,11 @@ class PterodactylApiClient {
       return parse(json as Map<String, dynamic>);
     } on TypeError {
       throw ApiException('Invalid response from panel');
+    } on UnsupportedError {
+      // An out-of-range payload number (jsonDecode maps 1e999 to infinity)
+      // throws here from num.toInt(), not as a TypeError — same malformed
+      // payload, same clear error.
+      throw ApiException('Invalid response from panel');
     }
   }
 
