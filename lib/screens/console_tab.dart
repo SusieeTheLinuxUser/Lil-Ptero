@@ -212,7 +212,11 @@ class _ConsoleTabState extends State<ConsoleTab> {
                   onSubmitted: (_) => _send(),
                 ),
               ),
-              IconButton(icon: const Icon(Icons.send), onPressed: _connected ? _send : null),
+              IconButton(
+                icon: const Icon(Icons.send),
+                tooltip: 'Send command',
+                onPressed: _connected ? _send : null,
+              ),
             ],
           ),
         ),
