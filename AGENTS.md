@@ -4,6 +4,13 @@ Instructions for AI coding agents (and a decent map for human contributors too) 
 
 F-Droid distribution goes through our own repo (see "Own F-Droid repo" under Releases & distribution). The official F-Droid MR was closed on 2026-11-26 by the user's choice; [fdroid/AI_HANDOFF.md](fdroid/AI_HANDOFF.md) and [fdroid/README.md](fdroid/README.md) are kept as history of that submission.
 
+## Branches (since 2026-11-28)
+
+- `dev` is the default branch. Branch from `origin/dev` and open PRs into `dev` (`gh pr create --base dev`).
+- `main` is prod: `v*.*.*` tags on it build the signed release, which the F-Droid repo picks up. A release is a PR from `dev` into `main`, merged with a merge commit.
+- Both branches are protected by the ruleset "Protect dev and prod": no deletion, no force push, changes only through a PR, and CI `analyze-and-test` must pass.
+- Nothing else lives on GitHub: delete a branch once its PR is merged (`gh pr merge --delete-branch`).
+
 ## What this is
 
 An open-source Android app (Flutter) that talks directly to a Pterodactyl panel's Client API to let someone view and control their Minecraft server(s) from their phone — resource stats, power actions, and a live console. Works with any Pterodactyl host; there's no backend of ours in the middle. See [README.md](README.md) for the user-facing pitch and current feature status.
@@ -100,7 +107,7 @@ Known local gotcha: if your default JDK is very new (e.g. 21+), the Android Grad
 
 **Always run `flutter analyze` and `flutter test` before considering a change done.** Every non-trivial piece of logic (a branch, a parser, the console state machine) should leave a runnable test behind — see `test/console_state_test.dart` for the pattern (script a sequence of events through a pure state machine, assert the resulting state, no real socket).
 
-`.github/workflows/ci.yml` runs both on every PR and on pushes to `main`; `main` is protected and requires that check to pass. Automated tests cover pure logic, mocked HTTP, loopback WebSockets, and widget behavior; Android services, notifications, and background isolates still **must** be verified on a real device (see the adb recipes above).
+`.github/workflows/ci.yml` runs both on every PR and on pushes to `main`; `dev` and `main` are protected and require that check to pass (see Branches). Automated tests cover pure logic, mocked HTTP, loopback WebSockets, and widget behavior; Android services, notifications, and background isolates still **must** be verified on a real device (see the adb recipes above).
 
 ### API and console reliability validation (2026-09-26)
 
